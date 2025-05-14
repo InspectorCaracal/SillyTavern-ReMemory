@@ -267,13 +267,13 @@ function loadSettingsUI() {
 		getContext().saveSettingsDebounced();
 	});
 	// load all numeric settings
-	$(`input[type="number"]`).each((_i, elem) => {
+	$(`.rmr-extension_block input[type="number"]`).each((_i, elem) => {
 		const setting_key = elem.id.replace('rmr_', '');
 		elem.value = settings[setting_key];
 		$(elem).on('change', handleIntValueChange);
 	});
 	// load all text settings
-	$(`textarea`).each((_i, elem) => {
+	$(`.rmr-extension_block textarea`).each((_i, elem) => {
 		const setting_key = elem.id.replace('rmr_', '');
 		elem.value = settings[setting_key];
 		$(elem).on('change', handleStringValueChange);
