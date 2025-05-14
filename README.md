@@ -1,11 +1,7 @@
 # ReMemory
 *A Memory Management Extension*
 
-### This document is still WIP!
-
 **Currently Beta**
-
-Sometimes you want just a bit more control over what events are important for your characters to remember, but manually writing up world info entries every time is too much trouble....
 
 ### Convenience, Not Automation
 
@@ -13,9 +9,9 @@ While most memory tools focus on automating away the process, ReMemory leaves th
 
 And by using world info books as the memory, it leaves the resulting memories available for you to edit individually as needed, without any custom coding required.
 
-### High Compatability
+### High Compatibility
 
-Since ReMemory uses SillyTavern's robust core feature of *world info*, it avoids virtually all cross-extension compatability issues. In addition, you can use any and all existing world info features and extensions to further manage your memory books!
+Since ReMemory uses SillyTavern's robust core feature of *world info*, it avoids virtually all cross-extension compatibility issues. In addition, you can use any and all existing world info features and extensions to further manage your memory books!
 
 ### Lightweight Recall Simulation
 
@@ -25,24 +21,28 @@ Additionally, it can create what I call "pop-up" memories - these are memories t
 
 *TBA: Pop-up memories will be able to fade over time, becoming less likely to trigger until they're deleted.*
 
+## Installation
+
+Install like any other SillyTavern extension, with the Github link: `https://github.com/InspectorCaracal/SillyTavern-ReMemory`
+
 ## Features
 
 ### Log Message
-[add image]
+![image](https://github.com/user-attachments/assets/11300e4a-77bd-48a7-9a82-7c2d28f8042c)
 
 **Copy a message directly to a memory book entry.**
 
 The **Log Message** button creates a new memory directly from the message, only generating keywords - no summary. The memory prefix/suffix in your settings are still applied.
 
 ### Generate Memory
-[add image]
+![image](https://github.com/user-attachments/assets/7a384771-7396-4386-b1d8-a8b8e74e438a)
 
 **Generate a summarized memory of a specific event.**
 
 The **Generate Memory** button will generate a new memory and keywords from the message you click, using the prior few messages as context. How many previous messages are included is defined by your `Memory Span` setting.
 
 ### End Scene
-[add image]
+![image](https://github.com/user-attachments/assets/03eee155-95d5-481c-902b-a2edad1c6c45)
 
 **Summarize a scene and mark its end point.**
 
@@ -54,45 +54,40 @@ The **End Scene** button does two things: it generates a summary of all that hap
 
 *All text- and number-entry fields can be reset to defaults by deleting the contents of the field.*
 
-### Message Actions
-[add image]
+### Message Buttons
+![image](https://github.com/user-attachments/assets/83d77ff1-24de-4704-bfdb-6c3b2aa75045)
 
 Configure which buttons you want visible on your messages.
 
 ### Memory Entry settings
-[add image]
+![image](https://github.com/user-attachments/assets/61114cc1-218d-4f03-b77f-779f09f47743)
 
-#### Memory Depth
-
-#### Memory Span
-
-#### Stickiness
-
-#### Trigger %
+- **Memory Span** - How many messages back are included when generating a memory. The default of 3 means that the message and the 3 previous messages right before it are used to generate the memory.
+- **Memory Depth** - What chat depth recalled memories are inserted at. Lower depth means closer to the end, which means higher priority. I recommend a value between 1 and 6, but follow your dreams.
+- **Stickiness** - How long a memory will stay "on your mind", so to speak, in terms of messages sent since activation. 
+- **Trigger %** - Defines how likely a given memory is to trigger when one of its keywords is used. This is set to 50% by default so that memories aren't necessarily recalled every time something related happens.
+- **Memory Prefix & Suffix** - These strings will be added to the beginning and to the end of the memory entry.
 
 ### Generation settings
-[add image]
+![image](https://github.com/user-attachments/assets/94fd9257-77c6-436d-bb05-0588b10ec8e6)
 
-#### Keywords prompt
-
-#### Summary prompt
+- **Summary prompt** - The summary prompt is appended to the end of a chunk of messages or summaries when creating a summary. It's used by Generate Memory and by both stages of scene summaries.
+- **Keyword prompt** - The keyword prompt is used when generating a list of comma-separated keywords to trigger the memory entry. The generation is given an additional stop string of a newline to ensure that the content is only one line.
 
 ### "Pop-up" settings
-[add image]
+![image](https://github.com/user-attachments/assets/9cc01910-630a-4df6-9666-fce5204fe42f)
 
-#### popup
-
-#### fading
+- **"Pop-Up" Memories** - Enables the constant-activation type copies of memories that can "pop up" at any time. You can modify the trigger percent for them separately, but it's best to keep it low.
+- **Memory fading** - *Not Yet Implemented*
 
 ### Scene Ending
-[add image]
+![image](https://github.com/user-attachments/assets/4820cff9-4750-4405-80b3-1e85fdd73df7)
 
-#### Hide summarized messages
+- **Hide summarized messages** - Whether or not messages should be hidden from context after being summarized for an ended scene. This is normal hiding, so you can always click the eye icon or `/unhide` again later.
+- **Add chunk summaries** - The individual summaries for each chunk of history can optionally be added to the chat as comments.
+- **Scene summary behavior** - When ending a scene, you can choose to add a summary to the chat, add a summary as a memory, or skip summarizing.
 
-#### Add chunk summaries
-
-#### Scene summary behavior
-
+*NOTE: Choosing "Don't summarize" will cause no messages to be hidden after ending a scene, even if "Hide summarized messages" is enabled, as no messages will have been summarized.*
 
 ## To-Do
 
