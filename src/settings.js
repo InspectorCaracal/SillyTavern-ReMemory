@@ -200,7 +200,8 @@ function handleIntValueChange(event) {
 	const setting_key = event.target.id.replace('rmr_', '');
 	let value = parseInt(event.target.value);
 	if (isNaN(value)) {
-		event.target.value = settings[setting_key];
+		if (event.target.value.length === 0) event.target.value = defaultSettings[setting_key];
+		else event.target.value = settings[setting_key];
 		return;
 	}
 
