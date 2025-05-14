@@ -1,9 +1,9 @@
 import { moment } from '../../../../../lib.js';
 import { getContext } from "../../../../extensions.js";
-import { METADATA_KEY, world_info, createWorldInfoEntry } from "../../../../world-info.js";
+import { world_info, createWorldInfoEntry } from "../../../../world-info.js";
 import { user_avatar } from "../../../../personas.js";
 import { getCharaFilename } from "../../../../utils.js";
-import { settings, Buttons, SceneEndMode } from "./settings.js";
+import { settings, SceneEndMode } from "./settings.js";
 import { toggleSceneHighlight } from "./messages.js";
 
 // debugger;
@@ -216,9 +216,9 @@ async function generateSceneSummary(mes_id) {
 		if (settings.hide_scene) {
 			for (const mes of memory_history) {
 				mes.is_system = true;
-        // Also toggle "hidden" state for all visible messages
-        const mes_elem = $(`.mes[mesid="${mes.id}"]`);
-        if (mes_elem.length) mes_elem.attr('is_system', 'true');
+				// Also toggle "hidden" state for all visible messages
+				const mes_elem = $(`.mes[mesid="${mes.id}"]`);
+				if (mes_elem.length) mes_elem.attr('is_system', 'true');
 			}
 			getContext().saveChat();
 		}
