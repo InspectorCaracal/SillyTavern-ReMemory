@@ -94,6 +94,7 @@ Configure which buttons you want visible on your messages.
 - Add the memory-fade mechanism
 - Add an additional selector in the character book panel to choose which auxiliary book is the memory.
 - Add a couple slash commands
+- Add some connectivity settings like an optional rate limiter
 - Connection profiles...?
 
 ## Support

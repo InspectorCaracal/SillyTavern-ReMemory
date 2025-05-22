@@ -126,12 +126,15 @@ async function createMemoryEntry(content, book, keywords) {
 	await context.saveWorldInfo(book, book_data);
 }
 
-async function genSummaryWithSlash(history) {
+async function genSummaryWithSlash(history, id=0) {
+	if (id > 0) {
+		toastr.info("Generating summary #"+id+"....", 'ReMemory');
+	}
 	const gen = `/genraw stop=[] lock=on instruct=on Consider the following history:
 
 	${history}
 	
-	${settings.summary_prompt}`
+	${settings.memory_prompt}`
 		let result = await getContext().executeSlashCommandsWithOptions(gen);
 		return result.pipe;
 }
@@ -199,7 +202,15 @@ async function generateSceneSummary(mes_id) {
 	}
 	else if (chunks.length > 1) {
 		toastr.info(`Generating summaries for ${chunks.length} chunks....`, 'ReMemory');
-		final_context = await Promise.all(chunks.map((it) => genSummaryWithSlash(it))).join("\n\n");
+		let chunk_sums = [];
+		for (const cid in chunks) {
+			const chunk_sum = await genSummaryWithSlash(chunks[cid], cid);
+			chunk_sums.push(chunk_sum);
+			// pause for a brief buffer period to avoid api rate limits
+			await new Promise(resolve => setTimeout(resolve, 500));
+		}
+		// now we have a summary for each chunk, we need to combine them
+		final_context = chunk_sums.join("\n\n");
 		if (settings.add_chunk_summaries) {
 			await getContext().executeSlashCommandsWithOptions(`/comment at=${mes_id+1} <details class="rmr-summary-chunks"><summary>Chunk Summaries</summary>${final_context}</details>`)
 		}
