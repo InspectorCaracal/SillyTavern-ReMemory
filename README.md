@@ -54,6 +54,13 @@ The **End Scene** button does two things: it generates a summary of all that hap
 
 *All text- and number-entry fields can be reset to defaults by deleting the contents of the field.*
 
+### General
+*image TBA*
+
+Configure a maximum number of requests the extension can make **per minute**, to avoid API throttling. Requests are evenly spaced based on this value.
+
+Set to 0 (default) for no rate limiting.
+
 ### Message Buttons
 ![image](https://github.com/user-attachments/assets/83d77ff1-24de-4704-bfdb-6c3b2aa75045)
 
