@@ -223,9 +223,20 @@ async function generateSceneSummary(mes_id) {
 	else if (chunks.length > 1) {
 		toastr.info(`Generating summaries for ${chunks.length} chunks....`, 'ReMemory');
 		let chunk_sums = [];
-		for (const cid in chunks) {
+		let cid = 0;
+		while (cid < chunks.length) {
 			const chunk_sum = await genSummaryWithSlash(chunks[cid], Number(cid)+1);
-			chunk_sums.push(chunk_sum);
+			if (chunk_sum.length > 0) {
+				chunk_sums.push(chunk_sum);
+				cid++;
+			} else {
+				// popup
+		    const result = await getContext().Popup.show.text(
+					"ReMemory",
+					"There was an error generating a summary for chunk #"+Number(cid)+1,
+					{okButton: 'Retry', cancelButton: 'Cancel'});
+		    if (result != 1) return "";
+			}
 		}
 		// now we have a summary for each chunk, we need to combine them
 		final_context = chunk_sums.join("\n\n");
