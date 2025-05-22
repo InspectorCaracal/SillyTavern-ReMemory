@@ -30,6 +30,7 @@ const defaultSettings = {
 	"memory_prefix": "",
 	"memory_suffix": "",
 	"memory_max_tokens": 0, // max generated length for memories. 0 = default setting used
+	"rate_limit": 0, // requests per minute. 0 means no limit
 	// WI settings
 	"memory_depth": 4, // depth
 	"memory_life": 3,	// sticky
@@ -52,6 +53,16 @@ const settingsDiv = `<div class="rmr-extension-settings">
 			<b>ReMemory</b>
 			<div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
 		</div>
+		<div class="inline-drawer-content">
+			<h4>General</h4>
+			<div class="rmr-extension_block">
+					<label for="rmr_rate_limit">
+						<span>Max Requests per Minute</span>
+						<input class="text_pole widthUnset" id="rmr_rate_limit" type="number">
+					</label>
+			</div>
+		</div>
+		<hr>
 		<div class="inline-drawer-content">
 			<h4>Message Buttons</h4>
 			<div class="rmr-extension_block">
@@ -199,22 +210,28 @@ function handleStringValueChange(event) {
 function handleIntValueChange(event) {
 	const setting_key = event.target.id.replace('rmr_', '');
 	let value = parseInt(event.target.value);
+	debug("setting numeric value", value);
 	if (isNaN(value)) {
+		debug('Invalid value for setting', setting_key, event.target.value);
 		if (event.target.value.length === 0) event.target.value = defaultSettings[setting_key];
 		else event.target.value = settings[setting_key];
 		return;
 	}
 
-	if (event.target.max !== undefined) {
+	if (event.target.max.length > 0) {
+		debug("max value", event.target.max);
 		value = Math.min(value, event.target.max);
 	}
-	if (event.target.min !== undefined) {
+	if (event.target.min.length > 0) {
+		debug("min value", event.target.min);
 		value = Math.max(value, event.target.min);
 	}
+	debug("numeric value is now", value);
 
 	if (event.target.value !== value) {
 		event.target.value = value;
 	}
+	debug("numeric value is now", value);
 	
 	settings[setting_key] = value;
 	getContext().saveSettingsDebounced();

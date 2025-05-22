@@ -11,6 +11,11 @@ const log = (...msg)=>console.log('[reMemory]', ...msg);
 const debug = (...msg)=>console.debug('[reMemory]', ...msg);
 const error = (...msg)=>console.error('[reMemory]', ...msg);
 
+const delay_ms = ()=> {
+	return Math.max(500, 60000 / Number(settings.rate_limit));
+}
+let last_gen_timestamp = 0;
+
 function bookForChar(characterId) {
 	debug('getting books for character', characterId);
 	let char_data, char_file;
@@ -127,6 +132,13 @@ async function createMemoryEntry(content, book, keywords) {
 }
 
 async function genSummaryWithSlash(history, id=0) {
+	let this_delay = delay_ms() - (Date.now() - last_gen_timestamp);
+	debug('delaying', this_delay, "out of", delay_ms());
+	if (this_delay > 0) {
+		await new Promise(resolve => setTimeout(resolve, this_delay));
+	}
+	last_gen_timestamp = Date.now();
+
 	if (id > 0) {
 		toastr.info("Generating summary #"+id+"....", 'ReMemory');
 	}
@@ -135,8 +147,8 @@ async function genSummaryWithSlash(history, id=0) {
 	${history}
 	
 	${settings.memory_prompt}`
-		let result = await getContext().executeSlashCommandsWithOptions(gen);
-		return result.pipe;
+	let result = await getContext().executeSlashCommandsWithOptions(gen);
+	return result.pipe;
 }
 
 async function generateMemory(message) {
@@ -156,6 +168,13 @@ async function generateMemory(message) {
 }
 
 async function generateKeywords(content) {
+	let this_delay = delay_ms() - (Date.now() - last_gen_timestamp);
+	if (this_delay > 0) {
+		await new Promise(resolve => setTimeout(resolve, this_delay));
+	}
+	last_gen_timestamp = Date.now();
+
+	toastr.info("Generating keywords....", 'ReMemory');
 	const gen = `/genraw stop=["\n"] Consider the following quote:
 	
 	"${content}"
@@ -163,6 +182,7 @@ async function generateKeywords(content) {
 	${settings.keywords_prompt}`;
 	let result = await getContext().executeSlashCommandsWithOptions(gen);
 	debug(result.pipe);
+	// TODO: strip out character names
 	return result.pipe.split(',').slice(0,5).map((it) => it.trim());
 }
 
@@ -204,10 +224,8 @@ async function generateSceneSummary(mes_id) {
 		toastr.info(`Generating summaries for ${chunks.length} chunks....`, 'ReMemory');
 		let chunk_sums = [];
 		for (const cid in chunks) {
-			const chunk_sum = await genSummaryWithSlash(chunks[cid], cid);
+			const chunk_sum = await genSummaryWithSlash(chunks[cid], Number(cid)+1);
 			chunk_sums.push(chunk_sum);
-			// pause for a brief buffer period to avoid api rate limits
-			await new Promise(resolve => setTimeout(resolve, 500));
 		}
 		// now we have a summary for each chunk, we need to combine them
 		final_context = chunk_sums.join("\n\n");
@@ -288,23 +306,27 @@ export async function endScene(message) {
 	const chat = getContext().chat;
 	let mes_id = Number(message.attr('mesid'));
 	if (settings.scene_end_mode !== SceneEndMode.NONE) {
+		let membooks = [];
+		if (settings.scene_end_mode === SceneEndMode.MEMORY) {
+			membooks = await promptInfoBooks();
+			if (!membooks.length) {
+				toastr.error("No books selected", "ReMemory");
+				return;
+			}
+		}
 		const summary = await generateSceneSummary(mes_id);
 		if (summary.length === 0) {
 			toastr.error("Scene summary returned empty!", "ReMemory");
+			return;
 		}
-		else if (settings.scene_end_mode === SceneEndMode.MEMORY) {
-			const membooks = await promptInfoBooks();
-			if (!membooks.length) {
-				toastr.warning("No books selected", "ReMemory");
-			} else {
-				const keywords = await generateKeywords(summary);
-				const memory_text = `${settings.memory_prefix}${summary}${settings.memory_suffix}`;
-				
-				for (const book of membooks) {
-					await createMemoryEntry(memory_text, book, keywords);
-				}
-				toastr.success('Scene memory entry created', 'ReMemory');
+		if (settings.scene_end_mode === SceneEndMode.MEMORY) {
+			const keywords = await generateKeywords(summary);
+			const memory_text = `${settings.memory_prefix}${summary}${settings.memory_suffix}`;
+			
+			for (const book of membooks) {
+				await createMemoryEntry(memory_text, book, keywords);
 			}
+			toastr.success('Scene memory entry created', 'ReMemory');
 		}
 		else if (settings.scene_end_mode === SceneEndMode.MESSAGE) {
 			mes_id += 1
