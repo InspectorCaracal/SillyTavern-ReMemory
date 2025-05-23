@@ -38,7 +38,6 @@ async function promptInfoBooks() {
 	const context = getContext();
 	const powerUserSettings = context.powerUserSettings;
 
-	// TODO: get book options with js instead of stscript
 	let books = {};
 	if (context.chatMetadata.world_info) {
 		debug('adding chat book', context.chatMetadata.world_info);
@@ -81,7 +80,7 @@ async function promptInfoBooks() {
 	return result;
 }
 
-async function createMemoryEntry(content, book, keywords) {
+async function createMemoryEntry(content, book, keywords, options={}) {
 	const context = getContext();
 	const book_data = await context.loadWorldInfo(book);
 
@@ -95,7 +94,7 @@ async function createMemoryEntry(content, book, keywords) {
 	const new_entry = createWorldInfoEntry(book, book_data);
 	new_entry.content = content;
 	new_entry.addMemo = true;
-	new_entry.comment = `memory ${timestamp}`;
+	new_entry.comment = options.title ?? `memory ${timestamp}`;
 	new_entry.key = keywords;
 	new_entry.position = 4;
 	new_entry.depth = settings.memory_depth;
@@ -106,11 +105,12 @@ async function createMemoryEntry(content, book, keywords) {
 	new_entry.probability = settings.trigger_pct;
 
 	// optionally create pop-up constant entry
-	if (settings.popup_memories) {
+	const do_popup = JSON.parse(options.popup ?? settings.popup_memories);
+	if (do_popup) {
 			const new_popup = createWorldInfoEntry(book, book_data);
 			new_popup.content = content;
 			new_popup.addMemo = true;
-			new_popup.comment = `memory ${timestamp} POPUP`;
+			new_popup.comment = (options.title ?? `memory ${timestamp}`) + ` POPUP`;
 			new_popup.constant = true;
 			new_popup.position = 4;
 			new_popup.depth = settings.memory_depth;
@@ -137,7 +137,7 @@ async function genSummaryWithSlash(history, id=0) {
 	if (id > 0) {
 		toastr.info("Generating summary #"+id+"....", 'ReMemory');
 	}
-	const gen = `/genraw stop=[] lock=on instruct=on Consider the following history:
+	const gen = `/genraw stop=[] instruct=on Consider the following history:
 
 	${history}
 	
@@ -266,7 +266,7 @@ async function generateSceneSummary(mes_id) {
 }
 
 // generates a memory entry for the current message and its immediate context
-export async function rememberEvent(message) {
+export async function rememberEvent(message, options={}) {
 	const membooks = await promptInfoBooks();
 	if (!membooks.length) {
 		toastr.warning("No books selected", "ReMemory");
@@ -278,17 +278,19 @@ export async function rememberEvent(message) {
 		toastr.error("No memory text generated to record.", "ReMemory");
 		return;
 	}
-	const keywords = await generateKeywords(message_text);
+	let keywords;
+	if ('keywords' in options) keywords = options.keywords.split(',').map(it=>it.trim());
+	else keywords = await generateKeywords(message_text);
 	const memory_text = `${settings.memory_prefix}${message_text}${settings.memory_suffix}`;
 
 	for (const book of membooks) {
-		await createMemoryEntry(memory_text, book, keywords);
+		await createMemoryEntry(memory_text, book, keywords, options);
 	}
 	toastr.success('Memory entry created', 'ReMemory');
 }
 
 // logs the current message
-export async function logMessage(message) {
+export async function logMessage(message, options={}) {
 	const membooks = await promptInfoBooks();
 	if (!membooks.length) {
 		toastr.warning("No books selected", "ReMemory");
@@ -299,22 +301,29 @@ export async function logMessage(message) {
 		toastr.error("No message text found to record.", "ReMemory");
 		return;
 	}
-	const keywords = await generateKeywords(message_text);
+	let keywords;
+	if ('keywords' in options) keywords = options.keywords.split(',').map(it=>it.trim());
+	else keywords = await generateKeywords(message_text);
 	const memory_text = `${settings.memory_prefix}${message_text}${settings.memory_suffix}`;
 
 	for (const book of membooks) {
-		await createMemoryEntry(memory_text, book, keywords);
+		await createMemoryEntry(memory_text, book, keywords, options);
 	}
 	toastr.success('Memory entry created', 'ReMemory');
 }
 
 // closes off the scene and summarizes it
-export async function endScene(message) {
+export async function endScene(message, options={}) {
 	const chat = getContext().chat;
 	let mes_id = Number(message.attr('mesid'));
-	if (settings.scene_end_mode !== SceneEndMode.NONE) {
+	let mode = settings.scene_end_mode;
+	if ('mode' in options) {
+		let mode_in = options.mode.toUpperCase();
+		if (mode_in in SceneEndMode) mode = SceneEndMode[mode_in];
+	}
+	if (mode !== SceneEndMode.NONE) {
 		let membooks = [];
-		if (settings.scene_end_mode === SceneEndMode.MEMORY) {
+		if (mode === SceneEndMode.MEMORY) {
 			membooks = await promptInfoBooks();
 			if (!membooks.length) {
 				toastr.error("No books selected", "ReMemory");
@@ -326,16 +335,18 @@ export async function endScene(message) {
 			toastr.error("Scene summary returned empty!", "ReMemory");
 			return;
 		}
-		if (settings.scene_end_mode === SceneEndMode.MEMORY) {
-			const keywords = await generateKeywords(summary);
+		if (mode === SceneEndMode.MEMORY) {
+			let keywords;
+			if ('keywords' in options) keywords = options.keywords.split(',').map(it=>it.trim());
+			else keywords = await generateKeywords(summary);
 			const memory_text = `${settings.memory_prefix}${summary}${settings.memory_suffix}`;
 			
 			for (const book of membooks) {
-				await createMemoryEntry(memory_text, book, keywords);
+				await createMemoryEntry(memory_text, book, keywords, options);
 			}
 			toastr.success('Scene memory entry created', 'ReMemory');
 		}
-		else if (settings.scene_end_mode === SceneEndMode.MESSAGE) {
+		else if (mode === SceneEndMode.MESSAGE) {
 			mes_id += 1
 			await getContext().executeSlashCommandsWithOptions(`/comment at=${mes_id} ${summary}`);
 			// compat shenanigans

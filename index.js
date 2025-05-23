@@ -1,5 +1,5 @@
 import { eventSource, event_types } from "../../../../script.js";
-
+import { loadSlashCommands } from "./src/commands.js";
 import { addMessageButtons, resetMessageButtons } from "./src/messages.js";
 import { loadSettings, changeCharaName } from "./src/settings.js";
 
@@ -26,6 +26,7 @@ jQuery(async () => {
 });
 eventSource.on(event_types.APP_READY, async () => {
 	loadSettings();
+	loadSlashCommands();
 	const res = await fetch('/version');
 	STVersion = await res.json();
 });

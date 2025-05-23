@@ -1,0 +1,136 @@
+import { getContext } from "../../../../extensions.js";
+import { commonEnumProviders } from '../../../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue } from "../../../../slash-commands/SlashCommandEnumValue.js";
+import { endScene, logMessage, rememberEvent } from "./memories.js";
+
+
+function getMesFromInput(value) {
+	if (value.length > 0) {
+		const mes_id = Number(value);
+		if (isNaN(mes_id)) {
+			toastr.error(`Invalid message ID: ${value} is not a number.`);
+		}
+		return $(`.mes[mesid=${mes_id}]`);
+	} else {
+		const mes_id = getContext().chat.length-1;
+		return $(`.mes[mesid=${mes_id}]`);
+	}
+}
+
+export function loadSlashCommands() {
+	const parser = getContext().SlashCommandParser;
+	const command = getContext().SlashCommand;
+	const commandArg = getContext().SlashCommandArgument;
+	const namedArg = getContext().SlashCommandNamedArgument;
+	const arg_types = getContext().ARGUMENT_TYPE;
+
+	parser.addCommandObject(command.fromProps({
+		name: 'memory-gen',
+		callback: (args, value) => {
+			const message = getMesFromInput(value);
+			if (message.length) {
+				rememberEvent(message, args);
+			}
+		},
+		unnamedArgumentList: [
+			commandArg.fromProps({
+				description: 'message index (starts with 0)',
+				typeList: [arg_types.NUMBER],
+				isRequired: false,
+				enumProvider: commonEnumProviders.messages(),
+			}),
+		],
+		namedArgumentList: [
+			namedArg.fromProps({
+				name: 'title',
+				description: 'comment/title for the memory entry',
+				typeList: [arg_types.STRING],
+				isRequired: false,
+			}),
+			namedArg.fromProps({
+				name: 'popup',
+				description: 'override the "popup memory" setting',
+				typeList: [arg_types.BOOLEAN],
+				isRequired: false,
+			}),
+		],
+		helpString: 'Generate a memory for the given message ID. Defaults to the most recent message if no ID is provided.',
+	}));
+
+	parser.addCommandObject(command.fromProps({
+		name: 'memory-log',
+		callback: (args, value) => {
+			const message = getMesFromInput(value);
+			if (message) {
+				logMessage(message, args);
+			}
+		},
+		unnamedArgumentList: [
+			commandArg.fromProps({
+				description: 'message index (starts with 0)',
+				typeList: [arg_types.NUMBER],
+				isRequired: false,
+				enumProvider: commonEnumProviders.messages(),
+			}),
+		],
+		namedArgumentList: [
+			namedArg.fromProps({
+				name: 'title',
+				description: 'comment/title for the memory entry',
+				typeList: [arg_types.STRING],
+				isRequired: false,
+			}),
+			namedArg.fromProps({
+				name: 'popup',
+				description: 'override the "popup memory" setting',
+				typeList: [arg_types.BOOLEAN],
+				isRequired: false,
+			}),
+		],
+		helpString: 'Logs the message at the given ID. Defaults to the most recent message if no ID is provided.',
+	}));
+
+	parser.addCommandObject(command.fromProps({
+		name: 'scene-end',
+		callback: (args, value) => {
+			const message = getMesFromInput(value);
+			if (message) {
+				endScene(message, args);
+			}
+		},
+		unnamedArgumentList: [
+			commandArg.fromProps({
+				description: 'message index (starts with 0)',
+				typeList: [arg_types.NUMBER],
+				isRequired: false,
+				enumProvider: commonEnumProviders.messages(),
+			}),
+		],
+		namedArgumentList: [
+			namedArg.fromProps({
+				name: 'mode',
+				description: 'override summarization mode for scene endings',
+				typeList: [arg_types.STRING],
+				isRequired: false,
+				enumList: [
+					new SlashCommandEnumValue('none', "don't summarize"),
+					new SlashCommandEnumValue('message', 'add summary to chat'),
+					new SlashCommandEnumValue('memory', 'create memory entry with summary'),
+				],
+			}),
+			namedArg.fromProps({
+				name: 'title',
+				description: 'comment/title for the memory entry. only used when scene end mode is `memory`',
+				typeList: [arg_types.STRING],
+				isRequired: false,
+			}),
+			namedArg.fromProps({
+				name: 'popup',
+				description: 'override the "popup memory" setting. only used when scene end mode is `memory`',
+				typeList: [arg_types.BOOLEAN],
+				isRequired: false,
+			}),
+		],
+		helpString: 'Marks the message as a scene endpoint and generates a summary from the previous endpoint. Defaults to the most recent message if no ID is provided.',
+	}));
+}
