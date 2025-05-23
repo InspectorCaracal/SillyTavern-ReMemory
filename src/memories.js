@@ -5,6 +5,7 @@ import { user_avatar } from "../../../../personas.js";
 import { getCharaFilename } from "../../../../utils.js";
 import { settings, SceneEndMode } from "./settings.js";
 import { toggleSceneHighlight } from "./messages.js";
+import { STVersion } from "../index.js";
 
 // debugger;
 const log = (...msg)=>console.log('[reMemory]', ...msg);
@@ -27,15 +28,8 @@ function bookForChar(characterId) {
 		char_data = getContext().characters[characterId];
 		char_file = getCharaFilename(characterId);
 	}
-	// todo: this will eventually be selected and stored in extension settings
-	if (char_file) {
-		const extraBooks = world_info.charLore?.find((e) => e.name === char_file)?.extraBooks ?? [];
-		if (extraBooks) {
-			let memIndex = extraBooks.findIndex((e) => e.toLowerCase().includes("memory"));
-			if (memIndex > -1) {
-				return extraBooks[memIndex];
-			}
-		}
+	if (char_file in settings.book_assignments) {
+		return settings.book_assignments[char_file];
 	}
 	return "";
 }
@@ -341,7 +335,14 @@ export async function endScene(message) {
 		}
 		else if (settings.scene_end_mode === SceneEndMode.MESSAGE) {
 			mes_id += 1
-			await getContext().executeSlashCommandsWithOptions(`/comment at=${mes_id} ${summary} || /chat-jump ${mes_id}`);
+			await getContext().executeSlashCommandsWithOptions(`/comment at=${mes_id} ${summary}`);
+			// compat shenanigans
+			let ver = STVersion.pkgVersion.split(',').map(x=>Number(x));
+			let chatJump = true;
+			if (ver[1] < 12 || (ver[2] < 14 && STVersion.gitBranch =='staging') ||  (ver[2] < 15)) {
+				chatJump = false;
+			}
+			if (chatJump)	await getContext().executeSlashCommandsWithOptions(`/chat-jump ${mes_id}`);
 		}
 	}
 	chat[mes_id].extra.rmr_scene = true;

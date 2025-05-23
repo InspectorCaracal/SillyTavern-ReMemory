@@ -1,11 +1,13 @@
 import { extension_settings, getContext } from "../../../../extensions.js";
-import { extension_name } from '../index.js';
+import { getCharaFilename } from "../../../../utils.js";
+import { world_info } from "../../../../world-info.js";
+import { extension_name, extension_path } from '../index.js';
 import { resetMessageButtons } from './messages.js';
 
 // debugger;
-const log = (...msg)=>console.log('[reMemory]', ...msg);
-const debug = (...msg)=>console.debug('[reMemory]', ...msg);
-const error = (...msg)=>console.error('[reMemory]', ...msg);
+const log = (...msg) => console.log('[reMemory]', ...msg);
+const debug = (...msg) => console.debug('[reMemory]', ...msg);
+const error = (...msg) => console.error('[reMemory]', ...msg);
 
 export let settings;
 
@@ -45,150 +47,8 @@ const defaultSettings = {
 	"hide_scene": true, // hide messages after summarizing the scene
 	"add_chunk_summaries": false, // add a comment containing all of the individual chunk summaries
 	"scene_end_mode": SceneEndMode.MESSAGE, // whether final summary is added as a chat message or memory book entry
+	"book_assignments": {}, // which book to use for memory
 }
-
-const settingsDiv = `<div class="rmr-extension-settings">
-	<div class="inline-drawer">
-		<div class="inline-drawer-toggle inline-drawer-header">
-			<b>ReMemory</b>
-			<div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-		</div>
-		<div class="inline-drawer-content">
-			<h4>General</h4>
-			<div class="rmr-extension_block">
-					<label for="rmr_rate_limit">
-						<span>Max Requests per Minute</span>
-						<input class="text_pole widthUnset" id="rmr_rate_limit" type="number">
-					</label>
-			</div>
-		</div>
-		<hr>
-		<div class="inline-drawer-content">
-			<h4>Message Buttons</h4>
-			<div class="rmr-extension_block">
-				<label class="checkbox_label" for="rmr_log_button">
-					<span class="rmr-button fa-solid fa-fw fa-book-bookmark"></span>
-					<input id="rmr_log_button" class="checkbox" type="checkbox" />
-					Log Message
-				</label>
-				<label class="checkbox_label" for="rmr_memory_button">
-					<span class="rmr-button fa-solid fa-fw fa-brain"></span>
-					<input id="rmr_memory_button" class="checkbox" type="checkbox" /> Generate Memory
-				</label>
-				<label class="checkbox_label" for="rmr_scene_button">
-					<span class="rmr-button fa-solid fa-fw fa-circle-stop"></span>
-					<input id="rmr_scene_button" class="checkbox" type="checkbox" />
-					End Scene
-				</label>
-			</div>
-			<hr>
-			<h4>Memory Settings</h4>
-			<div class="rmr-extension_block">
-				<div class="flex-container marginTopBot5">
-					<div title="How many previous messages to include when generating a new memory." class="flex-container flex1 flexFlowColumn">
-						<label for="rmr_memory_span">
-							<small>Memory Span</small>
-						</label>
-						<input max="99" min="0" class="text_pole" id="rmr_memory_span" type="number">
-					</div>
-					<div title="Insertion depth for memory entries." class="flex-container flex1 flexFlowColumn">
-						<label for="rmr_memory_depth">
-							<small>Memory Depth</small>
-						</label>
-						<input max="99" min="0" class="text_pole" id="rmr_memory_depth" type="number">
-					</div>
-					<div title="The 'sticky' value for the memory entry - how many messages it'll stay active for after being activated." class="flex-container flex1 flexFlowColumn">
-						<label for="rmr_memory_life">
-							<small>Stickiness</small>
-						</label>
-					<input max="99" min="0" class="text_pole" id="rmr_memory_life" type="number">
-					</div>
-					<div title="How often a memory should activate when potentially triggered. Value is a percentage." class="flex-container flex1 flexFlowColumn">
-						<label for="rmr_trigger_pct">
-							<small>Trigger %</small>
-						</label>
-						<input max="100" min="1" class="text_pole" id="rmr_trigger_pct" type="number">
-					</div>
-				</div>
-			</div>
-			<hr>
-			<div class="rmr-extension_block flex-container marginTopBot5">
-				<div title="A string which will be added to the beginning of all memory entries." class="flex-container flex1 flexFlowColumn">
-					<label for="rmr_memory_prefix">
-						<small>Memory Prefix</small>
-					</label>
-					<textarea placeholder="" rows="1" class="margin0 text_pole textarea_compact" id="rmr_memory_prefix"></textarea>
-				</div>
-				<div title="A string which will be appended to the end of all memory entries." class="flex-container flex1 flexFlowColumn">
-					<label for="rmr_memory_suffix">
-						<small>Memory Suffix</small>
-					</label>
-					<textarea placeholder="" rows="1" class="margin0 text_pole textarea_compact" id="rmr_memory_suffix"></textarea>
-				</div>
-			</div>
-			<hr>
-			<div class="rmr-extension_block flex-container flexFlowColumn">
-				<div title="The prompt appended to a section of message history when generating a summary." class="flex-container flex1 flexFlowColumn">
-					<label for="rmr_memory_prompt">
-						<span>Summary Prompt</span>
-					</label>
-					<textarea placeholder="${defaultSettings['memory_prompt']}" rows="3" class="margin0 text_pole textarea_compact" id="rmr_memory_prompt"></textarea>
-				</div>
-				<div title="The prompt appended to a new memory message when generating triggering keywords." class="flex-container flex1 flexFlowColumn">
-					<label for="rmr_keywords_prompt">
-						<span>Keyword Prompt</span>
-					</label>
-					<textarea placeholder="${defaultSettings['keywords_prompt']}" rows="3" class="margin0 text_pole textarea_compact" id="rmr_keywords_prompt"></textarea>
-				</div>
-			</div>
-			<hr>
-			<h4>"Pop-Up" Memories</h4>
-			<div class="rmr-extension_block flex-container marginTopBot5">
-				<div title="Create an extra, low-chance, constant-activation copy of the memory entry." class="flex-container flex1 flexFlowColumn">
-					<label class="checkbox_label" for="rmr_popup_memories">
-						<input id="rmr_popup_memories" class="checkbox" type="checkbox" />
-						Create "Pop-Up" memories
-					</label>
-					<label for="rmr_popup_pct">
-						<input max="100" min="1" class="text_pole widthUnset" id="rmr_popup_pct" type="number">
-						<span>Trigger %</span>
-					</label>
-				</div>
-				<div title="Subtracts the set % from all pop-up memories every time a scene is ended." class="flex-container flex1 flexFlowColumn">
-					<label class="checkbox_label" for="rmr_fade_memories">
-						<input id="rmr_fade_memories" class="checkbox" type="checkbox" />
-						Enable memory fading
-					</label>
-					<label for="rmr_fade_pct">
-						<input max="100" min="1" class="text_pole widthUnset" id="rmr_fade_pct" type="number">
-						<span>Fade %</span>
-					</label>
-				</div>
-			</div>
-			<hr>
-			<h4>Scene Ending</h4>
-			<div class="rmr-extension_block">
-				<label class="checkbox_label" for="rmr_hide_scene">
-					<input id="rmr_hide_scene" class="checkbox" type="checkbox" />
-					Hide Summarized Messages
-				</label>
-				<label class="checkbox_label" for="rmr_add_chunk_summaries">
-					<input id="rmr_add_chunk_summaries" class="checkbox" type="checkbox" />
-					Add chunk summaries (when there are more than one) as comment
-				</label>
-				<span>
-					Scene summary behavior:
-					<select class="text_pole widthNatural" id="rmr_scene_end_mode">
-						<option value="MESSAGE">${SceneEndMode.MESSAGE}</option>
-						<option value="MEMORY">${SceneEndMode.MEMORY}</option>
-						<option value="NONE">${SceneEndMode.NONE}</option>
-					</select>
-				</span>
-			</div>
-			<hr>
-		</div>
-	</div>
-</div>`;
 
 function toggleCheckboxSetting(event) {
 	const setting_key = event.target.id.replace('rmr_', '');
@@ -232,14 +92,24 @@ function handleIntValueChange(event) {
 		event.target.value = value;
 	}
 	debug("numeric value is now", value);
-	
+
 	settings[setting_key] = value;
 	getContext().saveSettingsDebounced();
 }
 
-function loadSettingsUI() {
+async function loadSettingsUI() {
 	// add settings UI
-	$('#extensions_settings').append($(settingsDiv));
+	const settingsDiv = await $.get(`${extension_path}/templates/settings_panel.html`);
+	$('#extensions_settings').append(settingsDiv);
+	$('#rmr_keywords_prompt').attr('placeholder', defaultSettings.keywords_prompt);
+	$('#rmr_memory_prompt').attr('placeholder', defaultSettings.memory_prompt);
+	for (const end_mode in SceneEndMode) {
+		$(`#rmr_scene_end_mode`).append(
+			$('<option></option>')
+				.attr('value', end_mode)
+				.text(SceneEndMode[end_mode])
+		);
+	}
 
 	// handle button checkboxes
 	for (const button in Buttons) {
@@ -255,7 +125,7 @@ function loadSettingsUI() {
 				settings.show_buttons.push(button_name);
 			}
 			else if (!e.target.checked && settings.show_buttons.includes(button_name)) {
-				settings.show_buttons = settings.show_buttons.filter(it=>it!==button_name);
+				settings.show_buttons = settings.show_buttons.filter(it => it !== button_name);
 			}
 			resetMessageButtons();
 			getContext().saveSettingsDebounced();
@@ -299,6 +169,30 @@ function loadSettingsUI() {
 	debug('Settings UI loaded');
 }
 
+async function loadBookSelector() {
+	debug("load book selector");
+	const characterId = $('#set_character_world').data('chid');
+	const bookDiv = $(await $.get(`${extension_path}/templates/book_select.html`));
+	let char_file = getCharaFilename(characterId);
+	if (char_file) {
+		const extraBooks = world_info.charLore?.find((e) => e.name === char_file)?.extraBooks ?? [];
+		debug(extraBooks);
+		if (extraBooks) {
+			const selector = bookDiv.children('#rmr_memory_book_selector');
+			for (const book of extraBooks) {
+				selector.append(`<option value="${book}">${book}</option>`);
+			}
+			selector.on('change', (e) => {
+				const selectedBook = $(e.target.selectedOptions).val();
+				settings.book_assignments[char_file] = selectedBook;
+				getContext().saveSettingsDebounced();
+			});
+			selector.val(settings.book_assignments[char_file]);
+		}
+	}
+	getContext().callGenericPopup(bookDiv, 1, { okButton: 'Ok' });
+}
+
 export function loadSettings() {
 	// load settings
 	settings = extension_settings[extension_name] || {};
@@ -314,4 +208,14 @@ export function loadSettings() {
 
 	// load settings UI
 	loadSettingsUI();
+	$('#avatar_controls .buttons_block').prepend($('<div id="rmr_memory_book" class="menu_button rmr-button fa-solid fa-fw fa-brain interactable" title="ReMemory Book" tabindex="0"></div>'));
+	$('#rmr_memory_book').on('click', loadBookSelector);
+}
+
+export function changeCharaName(old_key, new_key) {
+	if (old_key in settings.book_assignments) {
+		settings.book_assignments[new_key] = settings.book_assignments[old_key];
+		delete settings.book_assignments[old_key];
+		getContext().saveSettingsDebounced();
+	}
 }
