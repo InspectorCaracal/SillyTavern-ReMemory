@@ -123,7 +123,7 @@ async function createMemoryEntry(content, book, keywords) {
 		}
 
 	await context.saveWorldInfo(book, book_data);
-	reloadWorldInfoEditor(book, false);
+	context.reloadWorldInfoEditor(book, false);
 }
 
 async function genSummaryWithSlash(history, id=0) {
