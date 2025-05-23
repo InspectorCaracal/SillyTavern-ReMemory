@@ -22,6 +22,7 @@ export function toggleSceneHighlight(button, mes_id) {
 		button.on('click', (e) => {
 			getContext().chat[mes_id].extra.rmr_scene = false;
 			toggleSceneHighlight($(e.target), $(e.target).closest('.mes').attr('mesid'));
+			getContext().saveChat();
 		});
 	} else {
 		button.removeClass('rmr-scene-point fa-circle-check');
