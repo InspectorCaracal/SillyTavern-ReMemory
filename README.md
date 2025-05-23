@@ -54,6 +54,13 @@ The **End Scene** button does two things: it generates a summary of all that hap
 
 *All text- and number-entry fields can be reset to defaults by deleting the contents of the field.*
 
+### Memory Book
+*image TBA*
+
+From the character's card, click the Brain icon to choose an auxiliary world book that will act as the character's memory. Choosing the character in the pop-up for future memories will add entries to the book you define here.
+
+*NOTE: Auxiliary world books can be added from the globe icon in SillyTavern's normal character settings. Shift+click the globe to open the configuration panel.*
+
 ### General
 *image TBA*
 
@@ -99,7 +106,6 @@ Configure which buttons you want visible on your messages.
 ## To-Do
 
 - Add the memory-fade mechanism
-- Add an additional selector ~~in the character book panel~~ to choose which auxiliary book is the memory.
 - Add a couple slash commands
 - Connection profiles...?
 
