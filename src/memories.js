@@ -127,13 +127,16 @@ async function createMemoryEntry(content, book, keywords, options={}) {
 }
 
 async function processMessageSlice(mes_id, count=0, start=0) {
+	const chat = getContext().chat;
+	const length = chat.length;
+
 	// slice to just the history from this message
-	let message_history = getContext().chat.slice(start, mes_id+1);
+	let message_history = chat.slice(start, mes_id+1);
 
 	// process for regex/hidden
 	message_history = await Promise.all(message_history.map(async (message, index) => {
 		let placement = message.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
-		let options = { isPrompt: true, depth: (start - index) };
+		let options = { isPrompt: true, depth: (length - (start+index) - 1) };
 		// no point in running the regexing on hidden messages
 		let mes_text = message.is_system ? message.mes : getRegexedString(message.mes, placement, options);
 		return {
