@@ -1,11 +1,11 @@
 import { moment } from '../../../../../lib.js';
 import { getContext } from "../../../../extensions.js";
-import { world_info, createWorldInfoEntry } from "../../../../world-info.js";
+import { getRegexedString, regex_placement } from '../../../regex/engine.js';
+import { createWorldInfoEntry } from "../../../../world-info.js";
 import { user_avatar } from "../../../../personas.js";
 import { getCharaFilename } from "../../../../utils.js";
 import { settings, SceneEndMode } from "./settings.js";
 import { toggleSceneHighlight } from "./messages.js";
-import { STVersion } from "../index.js";
 
 // debugger;
 const log = (...msg)=>console.log('[reMemory]', ...msg);
@@ -126,6 +126,35 @@ async function createMemoryEntry(content, book, keywords, options={}) {
 	context.reloadWorldInfoEditor(book, false);
 }
 
+async function processMessageSlice(mes_id, count=0, start=0) {
+	// slice to just the history from this message
+	let message_history = getContext().chat.slice(start, mes_id+1);
+
+	// process for regex/hidden
+	message_history = await Promise.all(message_history.map(async (message, index) => {
+		let placement = message.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
+		let options = { isPrompt: true, depth: (start - index) };
+		// no point in running the regexing on hidden messages
+		let mes_text = message.is_system ? message.mes : getRegexedString(message.mes, placement, options);
+		return {
+			...message,
+			mes: mes_text,
+			index,
+		};
+  }));
+
+	// filter out hidden messages
+	message_history = message_history.filter((it) => {return !it.is_system});
+	if (count > 0) {
+		count++;
+		if (message_history.length > count) {
+			// slice it again
+			message_history = message_history.slice(-1*count);
+		}
+	}
+	return message_history;
+}
+
 async function genSummaryWithSlash(history, id=0) {
 	let this_delay = delay_ms() - (Date.now() - last_gen_timestamp);
 	debug('delaying', this_delay, "out of", delay_ms());
@@ -149,15 +178,8 @@ async function genSummaryWithSlash(history, id=0) {
 async function generateMemory(message) {
 	const mes_id = Number(message.attr('mesid'));
 
-	// slice to just the history from this message
-	let memory_history = getContext().chat.slice(0, mes_id+1);
-	// filter out hidden messages
-	memory_history = memory_history.filter((it) => {return !it.is_system});
-	if (memory_history.length > settings.memory_span) {
-		// slice it again
-		memory_history = memory_history.slice(-1*settings.memory_span);
-	}
-	
+	const memory_history = await processMessageSlice(mes_id, settings.memory_span);
+	debug('memory history', memory_history);
 	const memory_context = memory_history.map((it) => `${it.name}: ${it.mes}`).join("\n\n");
 	return await genSummaryWithSlash(memory_context);
 }
@@ -183,16 +205,10 @@ async function generateKeywords(content) {
 
 async function generateSceneSummary(mes_id) {
 	// slice to just the history from this message
-	const chat = getContext().chat;
-	let memory_history = chat.slice(0, mes_id+1);
 	// slice to messages since the last scene end, if there was one
-	const last_end = memory_history.findLastIndex((it) => it.extra.rmr_scene);
-	if (last_end >= 0) {
-		// slice for just this scene
-		memory_history = memory_history.slice(last_end+1)
-	}
-	// filter out hidden messages
-	memory_history = memory_history.filter((it) => !it.is_system);
+	let last_end = getContext().chat.slice(0, mes_id+1).findLastIndex((it) => it.extra.rmr_scene);
+	if (last_end < 0) { last_end = 0; }
+	const memory_history = await processMessageSlice(mes_id, 0, last_end);
 
 	const max_tokens = getContext().maxContext - 100; // take out padding for the instructions
 	const getTokenCount = getContext().getTokenCountAsync;
