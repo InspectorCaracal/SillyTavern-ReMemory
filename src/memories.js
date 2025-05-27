@@ -348,14 +348,7 @@ export async function endScene(message, options={}) {
 		}
 		else if (mode === SceneEndMode.MESSAGE) {
 			mes_id += 1
-			await getContext().executeSlashCommandsWithOptions(`/comment at=${mes_id} ${summary}`);
-			// compat shenanigans
-			let ver = STVersion.pkgVersion.split(',').map(x=>Number(x));
-			let chatJump = true;
-			if (ver[1] < 12 || (ver[2] < 14 && STVersion.gitBranch =='staging') ||  (ver[2] < 15)) {
-				chatJump = false;
-			}
-			if (chatJump)	await getContext().executeSlashCommandsWithOptions(`/chat-jump ${mes_id}`);
+			await getContext().executeSlashCommandsWithOptions(`/comment at=${mes_id} ${summary} || /chat-jump ${mes_id}`);
 		}
 	}
 	chat[mes_id].extra.rmr_scene = true;
