@@ -55,18 +55,13 @@ The **End Scene** button does two things: it generates a summary of all that hap
 *All text- and number-entry fields can be reset to defaults by deleting the contents of the field.*
 
 ### Memory Book
-*image TBA*
+![image](https://github.com/user-attachments/assets/627ebf4e-e01c-4857-80db-2e3f012e5d9e)
+
+![image](https://github.com/user-attachments/assets/9235c591-7394-44c3-932b-121fac17ec7b)
 
 From the character's card, click the Brain icon to choose an auxiliary world book that will act as the character's memory. Choosing the character in the pop-up for future memories will add entries to the book you define here.
 
 *NOTE: Auxiliary world books can be added from the globe icon in SillyTavern's normal character settings. Shift+click the globe to open the configuration panel.*
-
-### General
-*image TBA*
-
-Configure a maximum number of requests the extension can make **per minute**, to avoid API throttling. Requests are evenly spaced based on this value.
-
-Set to 0 (default) for no rate limiting.
 
 ### Message Buttons
 ![image](https://github.com/user-attachments/assets/83d77ff1-24de-4704-bfdb-6c3b2aa75045)
@@ -82,9 +77,10 @@ Configure which buttons you want visible on your messages.
 - **Trigger %** - Defines how likely a given memory is to trigger when one of its keywords is used. This is set to 50% by default so that memories aren't necessarily recalled every time something related happens.
 - **Memory Prefix & Suffix** - These strings will be added to the beginning and to the end of the memory entry.
 
-### Generation settings
-![image](https://github.com/user-attachments/assets/94fd9257-77c6-436d-bb05-0588b10ec8e6)
+### API (Generation settings)
+![image](https://github.com/user-attachments/assets/eacc04a0-41fc-48a2-acc4-6b3f9ca944a4)
 
+- **Rate Limiting** - Configure a maximum number of requests the extension can make **per minute**, to avoid API throttling. Requests are evenly spaced based on this value. Set to 0 (default) for no rate limiting.
 - **Summary prompt** - The summary prompt is appended to the end of a chunk of messages or summaries when creating a summary. It's used by Generate Memory and by both stages of scene summaries.
 - **Keyword prompt** - The keyword prompt is used when generating a list of comma-separated keywords to trigger the memory entry. The generation is given an additional stop string of a newline to ensure that the content is only one line.
 
@@ -103,10 +99,41 @@ Configure which buttons you want visible on your messages.
 
 *NOTE: Choosing "Don't summarize" will cause no messages to be hidden after ending a scene, even if "Hide summarized messages" is enabled, as no messages will have been summarized.*
 
+## Slash Commands
+
+I may extend or modify these in the future, but the existing functionality is unlikely to change.
+
+### `/memory-gen {id}`
+
+*Generate a memory (equivalent to the Brain message action)*
+
+Optional named arguments:
+- `title` - the title/memo for the memory entry
+- `popup` - optional override of the "Pop-Up Memory" setting
+
+    
+### `/memory-log {id}`
+
+*Record a message as a memory (equivalent to the Bookmark message action)*
+
+Optional named arguments:
+- `title` - the title/memo for the memory entry
+- `popup` - optional override of the "Pop-Up Memory" setting
+
+### `/scene-end {id}`
+
+*End the scene at a message (equivalent to the Stop message action)*
+
+Optional named arguments:
+- `mode` - whether the scene ending should generate a memory entry, add a summary message, or just mark the scene end-point
+- `title` - the title/memo for the memory entry
+- `popup` - optional override of the "Pop-Up Memory" setting
+  
+
 ## To-Do
 
 - Add the memory-fade mechanism
-- Add a couple slash commands
+- Apply any active context-modifying regexes to the context being summarized
 - Connection profiles...?
 
 ## Support
