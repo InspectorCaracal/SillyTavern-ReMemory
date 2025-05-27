@@ -133,7 +133,6 @@ Optional named arguments:
 ## To-Do
 
 - Add the memory-fade mechanism
-- Apply any active context-modifying regexes to the context being summarized
 - Connection profiles...?
 
 ## Support
