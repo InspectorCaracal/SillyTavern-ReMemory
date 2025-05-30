@@ -142,7 +142,7 @@ async function processMessageSlice(mes_id, count=0, start=0) {
 		return {
 			...message,
 			mes: mes_text,
-			index,
+			index: start+index,
 		};
   }));
 
@@ -207,9 +207,10 @@ async function generateKeywords(content) {
 }
 
 async function generateSceneSummary(mes_id) {
+	const chat = getContext().chat;
 	// slice to just the history from this message
 	// slice to messages since the last scene end, if there was one
-	let last_end = getContext().chat.slice(0, mes_id+1).findLastIndex((it) => it.extra.rmr_scene);
+	let last_end = chat.slice(0, mes_id+1).findLastIndex((it) => it.extra.rmr_scene);
 	if (last_end < 0) { last_end = 0; }
 	const memory_history = await processMessageSlice(mes_id, 0, last_end);
 
@@ -267,11 +268,13 @@ async function generateSceneSummary(mes_id) {
 		const result = await genSummaryWithSlash(final_context);
 		// at this point we have a history that we've successfully summarized
 		// if scene hiding is on, we want to hide all the messages we summarized, now
+		debug(settings.hide_scene, memory_history);
 		if (settings.hide_scene) {
 			for (const mes of memory_history) {
-				mes.is_system = true;
+				chat[mes.index].is_system = true;
 				// Also toggle "hidden" state for all visible messages
-				const mes_elem = $(`.mes[mesid="${mes.id}"]`);
+				const mes_elem = $(`.mes[mesid="${mes.index}"]`);
+				debug(mes_elem);
 				if (mes_elem.length) mes_elem.attr('is_system', 'true');
 			}
 			getContext().saveChat();
