@@ -1,5 +1,5 @@
 import { moment } from '../../../../../lib.js';
-import { getContext } from "../../../../extensions.js";
+import { extension_settings, getContext } from "../../../../extensions.js";
 import { getRegexedString, regex_placement } from '../../../regex/engine.js';
 import { createWorldInfoEntry } from "../../../../world-info.js";
 import { user_avatar } from "../../../../personas.js";
@@ -11,6 +11,8 @@ import { toggleSceneHighlight } from "./messages.js";
 const log = (...msg)=>console.log('[reMemory]', ...msg);
 const debug = (...msg)=>console.debug('[reMemory]', ...msg);
 const error = (...msg)=>console.error('[reMemory]', ...msg);
+
+const runSlashCommand = getContext().executeSlashCommandsWithOptions;
 
 const delay_ms = ()=> {
 	return Math.max(500, 60000 / Number(settings.rate_limit));
@@ -158,6 +160,28 @@ async function processMessageSlice(mes_id, count=0, start=0) {
 	return message_history;
 }
 
+async function swapProfile() {
+	let swapped = false;
+	const current = extension_settings.connectionManager.selectedProfile;
+	const profile_list = extension_settings.connectionManager.profiles;
+	debug("all profiles", profile_list);
+	debug('current id', current);
+	debug('override profile id', settings.profile);
+	if (current != settings.profile) {
+		// we have to swap
+		debug('swapping profile');
+		swapped = current;
+		if (profile_list.findIndex(p => p.id === settings.profile) < 0) {
+			toastr.warning("Invalid connection profile override; using current profile.", "ReMemory");
+			return false
+		}
+		$('#connection_profiles').val(settings.profile);
+		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
+		await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
+	}
+	return swapped;
+}
+
 async function genSummaryWithSlash(history, id=0) {
 	let this_delay = delay_ms() - (Date.now() - last_gen_timestamp);
 	debug('delaying', this_delay, "out of", delay_ms());
@@ -169,12 +193,23 @@ async function genSummaryWithSlash(history, id=0) {
 	if (id > 0) {
 		toastr.info("Generating summary #"+id+"....", 'ReMemory');
 	}
-	const gen = `/genraw stop=[] instruct=on Consider the following history:
+	const gen = `/genraw stop=[] instruct=on lock=on Consider the following history:
 
 	${history}
 	
 	${settings.memory_prompt}`
-	let result = await getContext().executeSlashCommandsWithOptions(gen);
+	let swapped = false;
+	if (settings.profile) {
+		swapped = await swapProfile();
+		debug('swapped?', swapped);
+		if (swapped === null) return '';
+	}
+	let result = await runSlashCommand(gen);
+	if (swapped) {
+		$('#connection_profiles').val(swapped);
+		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
+		await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
+	}
 	return result.pipe;
 }
 
@@ -195,12 +230,23 @@ async function generateKeywords(content) {
 	last_gen_timestamp = Date.now();
 
 	toastr.info("Generating keywords....", 'ReMemory');
-	const gen = `/genraw stop=["\n"] Consider the following quote:
+	const gen = `/genraw stop=["\n"] lock=on Consider the following quote:
 	
 	"${content}"
 	
 	${settings.keywords_prompt}`;
-	let result = await getContext().executeSlashCommandsWithOptions(gen);
+	let swapped = false;
+	if (settings.profile) {
+		swapped = await swapProfile();
+		debug('swapped?', swapped);
+		if (swapped === null) return '';
+	}
+	let result = await runSlashCommand(gen);
+	if (swapped) {
+		$('#connection_profiles').val(swapped);
+		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
+		await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
+	}
 	debug(result.pipe);
 	// TODO: strip out character names
 	return result.pipe.split(',').slice(0,5).map((it) => it.trim());
@@ -256,7 +302,7 @@ async function generateSceneSummary(mes_id) {
 		// now we have a summary for each chunk, we need to combine them
 		final_context = chunk_sums.join("\n\n");
 		if (settings.add_chunk_summaries) {
-			await getContext().executeSlashCommandsWithOptions(`/comment at=${mes_id+1} <details class="rmr-summary-chunks"><summary>Chunk Summaries</summary>${final_context}</details>`)
+			await runSlashCommand(`/comment at=${mes_id+1} <details class="rmr-summary-chunks"><summary>Chunk Summaries</summary>${final_context}</details>`)
 		}
 	}
 	else {
@@ -370,7 +416,7 @@ export async function endScene(message, options={}) {
 		}
 		else if (mode === SceneEndMode.MESSAGE) {
 			mes_id += 1
-			await getContext().executeSlashCommandsWithOptions(`/comment at=${mes_id} ${summary} || /chat-jump ${mes_id}`);
+			await runSlashCommand(`/comment at=${mes_id} ${summary} || /chat-jump ${mes_id}`);
 		}
 	}
 	chat[mes_id].extra.rmr_scene = true;

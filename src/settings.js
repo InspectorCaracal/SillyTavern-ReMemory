@@ -33,6 +33,7 @@ const defaultSettings = {
 	"memory_suffix": "",
 	"memory_max_tokens": 0, // max generated length for memories. 0 = default setting used
 	"rate_limit": 0, // requests per minute. 0 means no limit
+	"profile": null, // optional connection-profile override
 	// WI settings
 	"memory_depth": 4, // depth
 	"memory_life": 3,	// sticky
@@ -97,14 +98,28 @@ function handleIntValueChange(event) {
 	getContext().saveSettingsDebounced();
 }
 
+function reloadProfiles() {
+	const profileSelect = $('#rmr_profile');
+	profileSelect.not(':first').remove();
+	for (const profile of extension_settings.connectionManager.profiles) {
+		profileSelect.append(
+			$('<option></option>')
+				.attr('value', profile.id)
+				.text(profile.name)
+		);
+		if (settings.profile == profile.id) profileSelect.val(profile.id);
+	}
+}
+
 async function loadSettingsUI() {
 	// add settings UI
 	const settingsDiv = await $.get(`${extension_path}/templates/settings_panel.html`);
 	$('#extensions_settings').append(settingsDiv);
 	$('#rmr_keywords_prompt').attr('placeholder', defaultSettings.keywords_prompt);
 	$('#rmr_memory_prompt').attr('placeholder', defaultSettings.memory_prompt);
+	const mode_div = $(`#rmr_scene_end_mode`);
 	for (const end_mode in SceneEndMode) {
-		$(`#rmr_scene_end_mode`).append(
+		mode_div.append(
 			$('<option></option>')
 				.attr('value', end_mode)
 				.text(SceneEndMode[end_mode])
@@ -141,7 +156,28 @@ async function loadSettingsUI() {
 	$("#rmr_hide_scene").prop('checked', settings.hide_scene).on('click', toggleCheckboxSetting);
 	// $("#rmr_add_banner").prop('checked', settings.add_banner).on('click', toggleCheckboxSetting);
 	$("#rmr_add_chunk_summaries").prop('checked', settings.add_chunk_summaries).on('click', toggleCheckboxSetting);
-	// handle dropdown
+	// handle dropdowns
+	reloadProfiles();
+	$('#rmr_profile').on('input', () => {
+		const profile = $('#rmr_profile').val();
+		if (!profile.length) {
+			// no override, we won't change
+			settings.profile = null;
+			getContext().saveSettingsDebounced();
+			return;
+		}
+		const profileID = extension_settings.connectionManager.profiles.findIndex(it => it.id == profile);
+		if (profileID >= 0) {
+			settings.profile = profile;
+			getContext().saveSettingsDebounced();
+		}
+		else {
+			toastr.error("Non-existent profile selected.", "ReMemory");
+			$('rmr_profile').val('');
+			settings.profile = null;
+			getContext().saveSettingsDebounced();
+		}
+	});
 	for (const mode in SceneEndMode) {
 		if (SceneEndMode[mode] === settings.scene_end_mode) {
 			$('#rmr_scene_end_mode').val(mode);

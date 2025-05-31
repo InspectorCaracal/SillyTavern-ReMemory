@@ -70,10 +70,16 @@
 			<hr>
 			<h4>API</h4>
 			<div class="rmr-extension_block">
-					<label for="rmr_rate_limit">
-						<span>Max Requests per Minute</span>
-						<input class="text_pole widthUnset" id="rmr_rate_limit" type="number">
-					</label>
+				<div>
+					Connection Profile override
+					<select class="text_pole widthNatural" id="rmr_profile">
+						<option value="">-- No Override --</option>
+					</select>
+				</div>
+				<label for="rmr_rate_limit">
+					<span>Max Requests per Minute</span>
+					<input class="text_pole widthUnset" id="rmr_rate_limit" type="number">
+				</label>
 			</div>
 			<hr>
 			<div class="rmr-extension_block flex-container flexFlowColumn">
