@@ -78,7 +78,7 @@ Configure which buttons you want visible on your messages.
 - **Memory Prefix & Suffix** - These strings will be added to the beginning and to the end of the memory entry.
 
 ### API (Generation settings)
-![image](https://github.com/user-attachments/assets/eacc04a0-41fc-48a2-acc4-6b3f9ca944a4)
+![image](https://github.com/user-attachments/assets/4495c680-a350-4abc-8e62-f6cbd68e6909)
 
 - **Profile override** - Select a connection profile to be used when generating memories and keywords. Uses your current API settings by default.
 - **Rate Limiting** - Configure a maximum number of requests the extension can make **per minute**, to avoid API throttling. Requests are evenly spaced based on this value. Set to 0 (default) for no rate limiting.
