@@ -19,6 +19,19 @@ const delay_ms = ()=> {
 }
 let last_gen_timestamp = 0;
 
+function parseOutReasoning(result) {
+    const { powerUserSettings } = getContext();
+    const reasoning = powerUserSettings.reasoning;
+
+    if (!reasoning.auto_parse) return;
+
+    const prefix = reasoning.prefix;
+    const suffix = reasoning.suffix;
+
+    const regex = new RegExp(`${prefix}(.*)${suffix}(\\n)*\\s*`, 'svg');
+    result.pipe = result.pipe.replace(regex, '');
+}
+
 function bookForChar(characterId) {
 	debug('getting books for character', characterId);
 	let char_data, char_file;
@@ -205,6 +218,9 @@ async function genSummaryWithSlash(history, id=0) {
 		if (swapped === null) return '';
 	}
 	let result = await runSlashCommand(gen);
+
+    parseOutReasoning(result);
+
 	if (swapped) {
 		$('#connection_profiles').val(swapped);
 		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
@@ -242,6 +258,9 @@ async function generateKeywords(content) {
 		if (swapped === null) return '';
 	}
 	let result = await runSlashCommand(gen);
+
+    parseOutReasoning(result);
+
 	if (swapped) {
 		$('#connection_profiles').val(swapped);
 		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
