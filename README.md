@@ -80,6 +80,7 @@ Configure which buttons you want visible on your messages.
 ### API (Generation settings)
 ![image](https://github.com/user-attachments/assets/eacc04a0-41fc-48a2-acc4-6b3f9ca944a4)
 
+- **Profile override** - Select a connection profile to be used when generating memories and keywords. Uses your current API settings by default.
 - **Rate Limiting** - Configure a maximum number of requests the extension can make **per minute**, to avoid API throttling. Requests are evenly spaced based on this value. Set to 0 (default) for no rate limiting.
 - **Summary prompt** - The summary prompt is appended to the end of a chunk of messages or summaries when creating a summary. It's used by Generate Memory and by both stages of scene summaries.
 - **Keyword prompt** - The keyword prompt is used when generating a list of comma-separated keywords to trigger the memory entry. The generation is given an additional stop string of a newline to ensure that the content is only one line.
@@ -110,6 +111,7 @@ I may extend or modify these in the future, but the existing functionality is un
 Optional named arguments:
 - `title` - the title/memo for the memory entry
 - `popup` - optional override of the "Pop-Up Memory" setting
+- `profile` - optional connection profile override
 
     
 ### `/memory-log {id}`
@@ -128,12 +130,12 @@ Optional named arguments:
 - `mode` - whether the scene ending should generate a memory entry, add a summary message, or just mark the scene end-point
 - `title` - the title/memo for the memory entry
 - `popup` - optional override of the "Pop-Up Memory" setting
+- `profile` - optional connection profile override
   
 
 ## To-Do
 
 - Add the memory-fade mechanism
-- Connection profiles...?
 
 ## Support
 

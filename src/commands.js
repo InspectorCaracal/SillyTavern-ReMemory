@@ -1,8 +1,13 @@
-import { getContext } from "../../../../extensions.js";
+import { extension_settings, getContext } from "../../../../extensions.js";
 import { commonEnumProviders } from '../../../../slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandEnumValue } from "../../../../slash-commands/SlashCommandEnumValue.js";
+import { enumTypes, SlashCommandEnumValue } from "../../../../slash-commands/SlashCommandEnumValue.js";
 import { endScene, logMessage, rememberEvent } from "./memories.js";
 
+// it's not exported for me to use, rip
+const profilesProvider = () => [
+	new SlashCommandEnumValue('<None>'),
+	...extension_settings.connectionManager.profiles.map(p => new SlashCommandEnumValue(p.name, null, enumTypes.name)),
+];
 
 function getMesFromInput(value) {
 	if (value.length > 0) {
@@ -51,6 +56,12 @@ export function loadSlashCommands() {
 				name: 'popup',
 				description: 'override the "popup memory" setting',
 				typeList: [arg_types.BOOLEAN],
+				isRequired: false,
+			}),
+			namedArg.fromProps({
+				name: 'profile',
+				description: 'name of a connection profile to override the current one',
+				enumProvider: profilesProvider,
 				isRequired: false,
 			}),
 		],
@@ -128,6 +139,12 @@ export function loadSlashCommands() {
 				name: 'popup',
 				description: 'override the "popup memory" setting. only used when scene end mode is `memory`',
 				typeList: [arg_types.BOOLEAN],
+				isRequired: false,
+			}),
+			namedArg.fromProps({
+				name: 'profile',
+				description: 'name of a connection profile to override the current one',
+				enumProvider: profilesProvider,
 				isRequired: false,
 			}),
 		],
