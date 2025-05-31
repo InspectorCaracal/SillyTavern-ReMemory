@@ -204,13 +204,15 @@ async function genSummaryWithSlash(history, id=0) {
 		debug('swapped?', swapped);
 		if (swapped === null) return '';
 	}
-	let result = await runSlashCommand(gen);
+	const result = await runSlashCommand(gen);
 	if (swapped) {
 		$('#connection_profiles').val(swapped);
 		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
 		await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
 	}
-	return result.pipe;
+	const parsed_result = getContext().parseReasoningFromString(result.pipe);
+	if (!parsed_result) return result.pipe;
+	return parsed_result.content;
 }
 
 async function generateMemory(message) {
@@ -247,9 +249,11 @@ async function generateKeywords(content) {
 		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
 		await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
 	}
-	debug(result.pipe);
+	const parsed_result = getContext().parseReasoningFromString(result.pipe);
+	if (parsed_result) result = parsed_result.content;
+	else result = result.pipe;
 	// TODO: strip out character names
-	return result.pipe.split(',').slice(0,5).map((it) => it.trim());
+	return result.split(',').slice(0,5).map((it) => it.trim());
 }
 
 async function generateSceneSummary(mes_id) {
