@@ -1,8 +1,6 @@
 # ReMemory
 *A Memory Management Extension*
 
-**Currently Beta**
-
 ### Convenience, Not Automation
 
 While most memory tools focus on automating away the process, ReMemory leaves the decision of what's important to remember in your hands - while handling all the tedious parts of actually creating such records for you.
@@ -19,7 +17,7 @@ The memory entry creation is designed to roughly simulate the experience of huma
 
 Additionally, it can create what I call "pop-up" memories - these are memories that just "pop into your head" with no apparent connection to events. These are secondary copies that are constant, not keyword, and have a much lower trigger chance - 10% by default.
 
-*TBA: Pop-up memories will be able to fade over time, becoming less likely to trigger until they're deleted.*
+These pop-up memories can optionally fade over time, becoming less likely to trigger until they're deleted.
 
 ## Installation
 
@@ -89,7 +87,7 @@ Configure which buttons you want visible on your messages.
 ![image](https://github.com/user-attachments/assets/9cc01910-630a-4df6-9666-fce5204fe42f)
 
 - **"Pop-Up" Memories** - Enables the constant-activation type copies of memories that can "pop up" at any time. You can modify the trigger percent for them separately, but it's best to keep it low.
-- **Memory fading** - *Not Yet Implemented*
+- **Memory fading** - Enables the "fading" of the constant-activation "pop up" copies with each scene ended. The trigger % of each memory entry will be reduced by the Fade % every time a fadeable entry is faded, until reaching 0. At (or below) 0%, the pop-up copy of the memory is deleted.
 
 ### Scene Ending
 ![image](https://github.com/user-attachments/assets/4820cff9-4750-4405-80b3-1e85fdd73df7)
@@ -112,7 +110,6 @@ Optional named arguments:
 - `title` - the title/memo for the memory entry
 - `popup` - optional override of the "Pop-Up Memory" setting
 - `profile` - optional connection profile override
-
     
 ### `/memory-log {id}`
 
@@ -121,6 +118,12 @@ Optional named arguments:
 Optional named arguments:
 - `title` - the title/memo for the memory entry
 - `popup` - optional override of the "Pop-Up Memory" setting
+
+### `/memory-fade {name}`
+
+*Fade pop-up memories for the specified character, or for all active memory books*
+
+The `name` argument is optional; if left out, it will use all available memory books for the currently active chat.
 
 ### `/scene-end {id}`
 
@@ -132,10 +135,6 @@ Optional named arguments:
 - `popup` - optional override of the "Pop-Up Memory" setting
 - `profile` - optional connection profile override
   
-
-## To-Do
-
-- Add the memory-fade mechanism
 
 ## Support
 
