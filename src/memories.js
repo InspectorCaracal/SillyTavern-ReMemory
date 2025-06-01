@@ -14,6 +14,8 @@ const error = (...msg)=>console.error('[reMemory]', ...msg);
 
 const runSlashCommand = getContext().executeSlashCommandsWithOptions;
 
+let commandArgs;
+
 const delay_ms = ()=> {
 	return Math.max(500, 60000 / Number(settings.rate_limit));
 }
@@ -164,18 +166,17 @@ async function swapProfile() {
 	let swapped = false;
 	const current = extension_settings.connectionManager.selectedProfile;
 	const profile_list = extension_settings.connectionManager.profiles;
-	debug("all profiles", profile_list);
-	debug('current id', current);
-	debug('override profile id', settings.profile);
-	if (current != settings.profile) {
+	let target_id = settings.profile;
+	if (commandArgs.profile) target_id = commandArgs.profile;
+	if (current != target_id) {
 		// we have to swap
 		debug('swapping profile');
 		swapped = current;
-		if (profile_list.findIndex(p => p.id === settings.profile) < 0) {
+		if (profile_list.findIndex(p => p.id === target_id) < 0) {
 			toastr.warning("Invalid connection profile override; using current profile.", "ReMemory");
 			return false
 		}
-		$('#connection_profiles').val(settings.profile);
+		$('#connection_profiles').val(target_id);
 		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
 		await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
 	}
@@ -199,7 +200,7 @@ async function genSummaryWithSlash(history, id=0) {
 	
 	${settings.memory_prompt}`
 	let swapped = false;
-	if (settings.profile) {
+	if (settings.profile || commandArgs.profile) {
 		swapped = await swapProfile();
 		debug('swapped?', swapped);
 		if (swapped === null) return '';
@@ -339,6 +340,7 @@ async function generateSceneSummary(mes_id) {
 
 // generates a memory entry for the current message and its immediate context
 export async function rememberEvent(message, options={}) {
+	commandArgs = options;
 	const membooks = await promptInfoBooks();
 	if (!membooks.length) {
 		toastr.warning("No books selected", "ReMemory");
@@ -363,6 +365,7 @@ export async function rememberEvent(message, options={}) {
 
 // logs the current message
 export async function logMessage(message, options={}) {
+	commandArgs = options;
 	const membooks = await promptInfoBooks();
 	if (!membooks.length) {
 		toastr.warning("No books selected", "ReMemory");
@@ -386,6 +389,7 @@ export async function logMessage(message, options={}) {
 
 // closes off the scene and summarizes it
 export async function endScene(message, options={}) {
+	commandArgs = options;
 	const chat = getContext().chat;
 	let mes_id = Number(message.attr('mesid'));
 	let mode = settings.scene_end_mode;

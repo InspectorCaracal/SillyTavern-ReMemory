@@ -22,6 +22,12 @@ function getMesFromInput(value) {
 	}
 }
 
+function profileIdFromName(profile_name) {
+	const profile = extension_settings.connectionManager.profiles.find(p => p.name == profile_name);
+	if (profile) return profile.id;
+	return '';
+}
+
 export function loadSlashCommands() {
 	const parser = getContext().SlashCommandParser;
 	const command = getContext().SlashCommand;
@@ -34,6 +40,9 @@ export function loadSlashCommands() {
 		callback: (args, value) => {
 			const message = getMesFromInput(value);
 			if (message.length) {
+				if (args.profile !== undefined) {
+					args.profile = profileIdFromName(args.profile);
+				}
 				rememberEvent(message, args);
 			}
 		},
@@ -106,6 +115,9 @@ export function loadSlashCommands() {
 		callback: (args, value) => {
 			const message = getMesFromInput(value);
 			if (message) {
+				if (args.profile !== undefined) {
+					args.profile = profileIdFromName(args.profile);
+				}
 				endScene(message, args);
 			}
 		},
