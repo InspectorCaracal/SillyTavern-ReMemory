@@ -1,7 +1,7 @@
 import { moment } from '../../../../../lib.js';
 import { extension_settings, getContext } from "../../../../extensions.js";
 import { getRegexedString, regex_placement } from '../../../regex/engine.js';
-import { createWorldInfoEntry } from "../../../../world-info.js";
+import { createWorldInfoEntry, deleteWorldInfoEntry } from "../../../../world-info.js";
 import { user_avatar } from "../../../../personas.js";
 import { getCharaFilename } from "../../../../utils.js";
 import { settings, SceneEndMode } from "./settings.js";
@@ -38,7 +38,7 @@ function bookForChar(characterId) {
 	return "";
 }
 
-async function promptInfoBooks() {
+export function getActiveMemoryBooks() {
 	const context = getContext();
 	const powerUserSettings = context.powerUserSettings;
 
@@ -72,11 +72,14 @@ async function promptInfoBooks() {
 			}
 		}
 	}
+	return books;
+}
 
+async function promptInfoBooks() {
+	const books = getActiveMemoryBooks();
 	const bookOptions = Object.keys(books);
 	if (bookOptions.length === 0) return [];
-
-	let bookchars = await context.executeSlashCommandsWithOptions(`/buttons labels=${JSON.stringify(bookOptions)} multiple=true Which characters do you want to remember this?`);
+	let bookchars = await runSlashCommand(`/buttons labels=${JSON.stringify(bookOptions)} multiple=true Which characters do you want to remember this?`);
 	let result = [];
 	for (const char of JSON.parse(bookchars.pipe)) {
 		result.push(books[char]);
@@ -427,8 +430,51 @@ export async function endScene(message, options={}) {
 			await runSlashCommand(`/comment at=${mes_id} ${summary} || /chat-jump ${mes_id}`);
 		}
 	}
+	if (settings.fade_memories) {
+		toastr.info('Fading all pop-up memories for this chat...','ReMemory');
+		fadeMemories();
+	}
 	chat[mes_id].extra.rmr_scene = true;
 	getContext().saveChat();
 	toggleSceneHighlight($(`.mes[mesid="${mes_id}"] .rmr-button.fa-circle-stop`), mes_id);
 	toastr.success(`Scene ending marked at message ${mes_id}.`, 'ReMemory');
+}
+
+// fade all fadeable memories
+export async function fadeMemories(name='', quiet=true) {
+	const context = getContext();
+	let books = getActiveMemoryBooks();
+	let count = 0;
+	let purged = 0;
+	if (name.length) {
+		if (Object.keys(books).includes(name)) books = [books[name]];
+		else return;
+	}	else {
+		books = Object.values(books);
+	}
+	for (const book of books) {
+		const book_data = await context.loadWorldInfo(book);
+		let modified = false;
+		for (const entry of Object.values(book_data.entries)) {
+			if (entry.rmr_fade) {
+				modified = true;
+				let trigger_pct = entry.probability;
+				trigger_pct -= settings.fade_pct;
+				if (trigger_pct <= 0) {
+					// delete the entry entirely
+					delete book_data.entries[entry.uid];
+					purged++;
+				} else {
+					entry.probability = trigger_pct;
+				}
+				count++;
+			}
+		}
+		// save modifications to the book
+		if (modified) {
+			await context.saveWorldInfo(book, book_data);
+			context.reloadWorldInfoEditor(book, false);
+		}
+	}
+	toastr.success(`Faded ${count} "pop-up" memories across ${books.length} book(s); ${purged} were removed.`, "ReMemory")
 }

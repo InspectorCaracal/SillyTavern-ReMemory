@@ -148,11 +148,11 @@ async function loadSettingsUI() {
 	}
 	// handle other checkboxes
 	$("#rmr_popup_memories").prop('checked', settings.popup_memories).on('click', toggleCheckboxSetting);
-	// $("#rmr_fade_memories").prop('checked', settings.fade_memories).on('click', toggleCheckboxSetting);
-	$("#rmr_fade_memories").prop('checked', settings.fade_memories).on('click', (e) => {
-		toastr.warning('Memory fading is not yet implemented.', 'ReMemory');
-		e.target.checked = false;
-	});
+	$("#rmr_fade_memories").prop('checked', settings.fade_memories).on('click', toggleCheckboxSetting);
+	// $("#rmr_fade_memories").prop('checked', settings.fade_memories).on('click', (e) => {
+	// 	toastr.warning('Memory fading is not yet implemented.', 'ReMemory');
+	// 	e.target.checked = false;
+	// });
 	$("#rmr_hide_scene").prop('checked', settings.hide_scene).on('click', toggleCheckboxSetting);
 	// $("#rmr_add_banner").prop('checked', settings.add_banner).on('click', toggleCheckboxSetting);
 	$("#rmr_add_chunk_summaries").prop('checked', settings.add_chunk_summaries).on('click', toggleCheckboxSetting);

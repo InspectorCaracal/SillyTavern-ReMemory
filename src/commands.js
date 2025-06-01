@@ -1,7 +1,12 @@
 import { extension_settings, getContext } from "../../../../extensions.js";
 import { commonEnumProviders } from '../../../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { enumTypes, SlashCommandEnumValue } from "../../../../slash-commands/SlashCommandEnumValue.js";
-import { endScene, logMessage, rememberEvent } from "./memories.js";
+import { getActiveMemoryBooks, endScene, logMessage, rememberEvent, fadeMemories } from "./memories.js";
+
+// debugger;
+const log = (...msg)=>console.log('[reMemory]', ...msg);
+const debug = (...msg)=>console.debug('[reMemory]', ...msg);
+const error = (...msg)=>console.error('[reMemory]', ...msg);
 
 // it's not exported for me to use, rip
 const profilesProvider = () => [
@@ -27,6 +32,7 @@ function profileIdFromName(profile_name) {
 	if (profile) return profile.id;
 	return '';
 }
+
 
 export function loadSlashCommands() {
 	const parser = getContext().SlashCommandParser;
@@ -162,4 +168,30 @@ export function loadSlashCommands() {
 		],
 		helpString: 'Marks the message as a scene endpoint and generates a summary from the previous endpoint. Defaults to the most recent message if no ID is provided.',
 	}));
+
+	parser.addCommandObject(command.fromProps({
+		name: 'memory-fade',
+		callback: (args, value) => {
+			if (!value.length) {
+				debug('fading all active memory books');
+				return fadeMemories();
+			}
+			const memorable = getActiveMemoryBooks();
+			if (Object.keys(memorable).includes(value)) {
+				debug('fading memories for',value);
+				fadeMemories(value);
+			} else {
+				toastr.error(`No memory book available for ${value}.`, "ReMemory");
+			}
+		},
+		unnamedArgumentList: [
+			commandArg.fromProps({
+				description: 'specific target to fade memories for',
+				isRequired: false,
+				enumProvider: () => Object.keys(getActiveMemoryBooks()).map(charname => new SlashCommandEnumValue(charname)),
+			}),
+		],
+		helpString: "Reduces trigger % on all of the pop-up memories for the current chat/characters. If a specific target name is given, only that target's memories will fade.",
+	}));
+
 }
