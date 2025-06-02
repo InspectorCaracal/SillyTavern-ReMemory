@@ -1,5 +1,5 @@
 
 // boy i'm tired of copy/pasting this whole block every time
-const log = (...msg)=>console.log('[reMemory]', ...msg);
-const debug = (...msg)=>console.debug('[reMemory]', ...msg);
-const error = (...msg)=>console.error('[reMemory]', ...msg);
+export const log = (...msg)=>console.log('[reMemory]', ...msg);
+export const debug = (...msg)=>console.debug('[reMemory]', ...msg);
+export const error = (...msg)=>console.error('[reMemory]', ...msg);
