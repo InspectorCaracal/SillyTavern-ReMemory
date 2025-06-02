@@ -1,20 +1,21 @@
 import { moment } from '../../../../../lib.js';
 import { extension_settings, getContext } from "../../../../extensions.js";
 import { getRegexedString, regex_placement } from '../../../regex/engine.js';
-import { createWorldInfoEntry, deleteWorldInfoEntry } from "../../../../world-info.js";
+import { createWorldInfoEntry } from "../../../../world-info.js";
 import { user_avatar } from "../../../../personas.js";
 import { getCharaFilename } from "../../../../utils.js";
 import { settings, SceneEndMode } from "./settings.js";
 import { toggleSceneHighlight } from "./messages.js";
-
-// debugger;
-const log = (...msg)=>console.log('[reMemory]', ...msg);
-const debug = (...msg)=>console.debug('[reMemory]', ...msg);
-const error = (...msg)=>console.error('[reMemory]', ...msg);
+import { debug } from "./logging.js";
 
 const runSlashCommand = getContext().executeSlashCommandsWithOptions;
 
 let commandArgs;
+
+const infoToast = (text)=>{if (!commandArgs.quiet) toastr.info(text, "ReMemory")};
+const doneToast = (text)=>{if (!commandArgs.quiet) toastr.success(text, "ReMemory")};
+const oopsToast = (text)=>{if (!commandArgs.quiet) toastr.warning(text, "ReMemory")};
+const errorToast = (text)=>{if (!commandArgs.quiet) toastr.error(text, "ReMemory")};
 
 const delay_ms = ()=> {
 	return Math.max(500, 60000 / Number(settings.rate_limit));
@@ -79,9 +80,13 @@ async function promptInfoBooks() {
 	const books = getActiveMemoryBooks();
 	const bookOptions = Object.keys(books);
 	if (bookOptions.length === 0) return [];
-	let bookchars = await runSlashCommand(`/buttons labels=${JSON.stringify(bookOptions)} multiple=true Which characters do you want to remember this?`);
+	let bookchars = commandArgs.books;
+	if (!bookchars) {
+		bookchars = await runSlashCommand(`/buttons labels=${JSON.stringify(bookOptions)} multiple=true Which characters do you want to remember this?`);
+	}
 	let result = [];
 	for (const char of JSON.parse(bookchars.pipe)) {
+		if (!(char in books)) return [];
 		result.push(books[char]);
 	}
 	return result;
@@ -92,7 +97,7 @@ async function createMemoryEntry(content, book, keywords, options={}) {
 	const book_data = await context.loadWorldInfo(book);
 
 	if (!(book_data && ('entries' in book_data))) {
-		toastr.warning('Memory book missing or invalid', 'ReMemory');
+		oopsToast('Memory book missing or invalid');
 		return;
 	}
 	const timestamp = moment().format('YYYY-MM-DD HH:mm');
@@ -176,7 +181,7 @@ async function swapProfile() {
 		debug('swapping profile');
 		swapped = current;
 		if (profile_list.findIndex(p => p.id === target_id) < 0) {
-			toastr.warning("Invalid connection profile override; using current profile.", "ReMemory");
+			oopsToast("Invalid connection profile override; using current profile.");
 			return false
 		}
 		$('#connection_profiles').val(target_id);
@@ -195,7 +200,7 @@ async function genSummaryWithSlash(history, id=0) {
 	last_gen_timestamp = Date.now();
 
 	if (id > 0) {
-		toastr.info("Generating summary #"+id+"....", 'ReMemory');
+		infoToast("Generating summary #"+id+"....");
 	}
 	const gen = `/genraw stop=[] instruct=on lock=on Consider the following history:
 
@@ -235,7 +240,7 @@ async function generateKeywords(content) {
 	}
 	last_gen_timestamp = Date.now();
 
-	toastr.info("Generating keywords....", 'ReMemory');
+	infoToast("Generating keywords....");
 	const gen = `/genraw stop=["\n"] lock=on Consider the following quote:
 	
 	"${content}"
@@ -290,7 +295,7 @@ async function generateSceneSummary(mes_id) {
 		final_context = chunks[0];
 	}
 	else if (chunks.length > 1) {
-		toastr.info(`Generating summaries for ${chunks.length} chunks....`, 'ReMemory');
+		infoToast(`Generating summaries for ${chunks.length} chunks....`);
 		let chunk_sums = [];
 		let cid = 0;
 		while (cid < chunks.length) {
@@ -314,11 +319,11 @@ async function generateSceneSummary(mes_id) {
 		}
 	}
 	else {
-		toastr.warning("No visible scene content! Skipping summary.", 'ReMemory');
+		oopsToast("No visible scene content! Skipping summary.");
 		return "";
 	}
 	if (final_context.length > 0) {
-		toastr.info("Generating scene summary....", 'ReMemory');
+		infoToast("Generating scene summary....");
 		const result = await genSummaryWithSlash(final_context);
 		// at this point we have a history that we've successfully summarized
 		// if scene hiding is on, we want to hide all the messages we summarized, now
@@ -335,7 +340,7 @@ async function generateSceneSummary(mes_id) {
 		}
 		return result;
 	} else {
-		toastr.warning("No final content - skipping summary.", 'ReMemory');
+		oopsToast("No final content - skipping summary.");
 		return "";
 	}
 
@@ -346,13 +351,13 @@ export async function rememberEvent(message, options={}) {
 	commandArgs = options;
 	const membooks = await promptInfoBooks();
 	if (!membooks.length) {
-		toastr.warning("No books selected", "ReMemory");
+		oopsToast("No books selected");
 		return;
 	}
-	toastr.info('Generating memory....', 'ReMemory');
+	infoToast('Generating memory....');
 	const message_text = await generateMemory(message);
 	if (message_text.length <= 0) {
-		toastr.error("No memory text generated to record.", "ReMemory");
+		errorToast("No memory text generated to record.");
 		return;
 	}
 	let keywords;
@@ -363,7 +368,7 @@ export async function rememberEvent(message, options={}) {
 	for (const book of membooks) {
 		await createMemoryEntry(memory_text, book, keywords, options);
 	}
-	toastr.success('Memory entry created', 'ReMemory');
+	doneToast('Memory entry created');
 }
 
 // logs the current message
@@ -371,12 +376,12 @@ export async function logMessage(message, options={}) {
 	commandArgs = options;
 	const membooks = await promptInfoBooks();
 	if (!membooks.length) {
-		toastr.warning("No books selected", "ReMemory");
+		oopsToast("No books selected");
 		return;
 	}
 	const message_text = message.find('.mes_text').text();
 	if (message_text.length <= 0) {
-		toastr.error("No message text found to record.", "ReMemory");
+		errorToast("No message text found to record.");
 		return;
 	}
 	let keywords;
@@ -387,7 +392,7 @@ export async function logMessage(message, options={}) {
 	for (const book of membooks) {
 		await createMemoryEntry(memory_text, book, keywords, options);
 	}
-	toastr.success('Memory entry created', 'ReMemory');
+	doneToastoast('Memory entry created');
 }
 
 // closes off the scene and summarizes it
@@ -405,13 +410,13 @@ export async function endScene(message, options={}) {
 		if (mode === SceneEndMode.MEMORY) {
 			membooks = await promptInfoBooks();
 			if (!membooks.length) {
-				toastr.error("No books selected", "ReMemory");
+				errorToast("No books selected");
 				return;
 			}
 		}
 		const summary = await generateSceneSummary(mes_id);
 		if (summary.length === 0) {
-			toastr.error("Scene summary returned empty!", "ReMemory");
+			errorToast("Scene summary returned empty!");
 			return;
 		}
 		if (mode === SceneEndMode.MEMORY) {
@@ -423,7 +428,7 @@ export async function endScene(message, options={}) {
 			for (const book of membooks) {
 				await createMemoryEntry(memory_text, book, keywords, options);
 			}
-			toastr.success('Scene memory entry created', 'ReMemory');
+			doneToast('Scene memory entry created');
 		}
 		else if (mode === SceneEndMode.MESSAGE) {
 			mes_id += 1
@@ -431,13 +436,13 @@ export async function endScene(message, options={}) {
 		}
 	}
 	if (settings.fade_memories) {
-		toastr.info('Fading all pop-up memories for this chat...','ReMemory');
+		infoToast('Fading all pop-up memories for this chat...');
 		fadeMemories();
 	}
 	chat[mes_id].extra.rmr_scene = true;
 	getContext().saveChat();
 	toggleSceneHighlight($(`.mes[mesid="${mes_id}"] .rmr-button.fa-circle-stop`), mes_id);
-	toastr.success(`Scene ending marked at message ${mes_id}.`, 'ReMemory');
+	doneToast(`Scene ending marked at message ${mes_id}.`);
 }
 
 // fade all fadeable memories
@@ -476,5 +481,5 @@ export async function fadeMemories(name='', quiet=true) {
 			context.reloadWorldInfoEditor(book, false);
 		}
 	}
-	toastr.success(`Faded ${count} "pop-up" memories across ${books.length} book(s); ${purged} were removed.`, "ReMemory")
+	doneToast(`Faded ${count} "pop-up" memories across ${books.length} book(s); ${purged} were removed.`, "ReMemory")
 }

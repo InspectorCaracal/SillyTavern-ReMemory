@@ -2,11 +2,7 @@ import { extension_settings, getContext } from "../../../../extensions.js";
 import { commonEnumProviders } from '../../../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { enumTypes, SlashCommandEnumValue } from "../../../../slash-commands/SlashCommandEnumValue.js";
 import { getActiveMemoryBooks, endScene, logMessage, rememberEvent, fadeMemories } from "./memories.js";
-
-// debugger;
-const log = (...msg)=>console.log('[reMemory]', ...msg);
-const debug = (...msg)=>console.debug('[reMemory]', ...msg);
-const error = (...msg)=>console.error('[reMemory]', ...msg);
+import { debug } from "./logging.js";
 
 // it's not exported for me to use, rip
 const profilesProvider = () => [

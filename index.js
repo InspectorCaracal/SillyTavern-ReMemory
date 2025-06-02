@@ -10,12 +10,6 @@ export const extension_path = `scripts/extensions/third-party/${extension_name}`
 export let STVersion;
 
 
-// debugger;
-const log = (...msg)=>console.log('[reMemory]', ...msg);
-const debug = (...msg)=>console.debug('[reMemory]', ...msg);
-const error = (...msg)=>console.error('[reMemory]', ...msg);
-
-
 function onMessageRendered(mes_id) {
 	let message = $('.mes[mesid="'+mes_id+'"]');
 	addMessageButtons(message);

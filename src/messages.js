@@ -2,11 +2,6 @@ import { getContext } from "../../../../extensions.js";
 import { settings, Buttons } from "./settings.js";
 import { endScene, rememberEvent, logMessage } from "./memories.js";
 
-// debugger;
-const log = (...msg)=>console.log('[reMemory]', ...msg);
-const debug = (...msg)=>console.debug('[reMemory]', ...msg);
-const error = (...msg)=>console.error('[reMemory]', ...msg);
-
 const logMessageDiv = `<div class="rmr-button fa-solid fa-fw fa-book-bookmark interactable" title="Create a lorebook memory entry for this post" tabindex="0"></div>`;
 const genMemoryDiv = `<div class="rmr-button fa-solid fa-fw fa-brain interactable" title="Generate a lorebook memory entry from this post and its immediate context" tabindex="0"></div>`;
 const endSceneDiv = `<div class="rmr-button fa-solid fa-fw fa-circle-stop interactable" title="Close off the scene and summarize it" tabindex="0"></div>`;

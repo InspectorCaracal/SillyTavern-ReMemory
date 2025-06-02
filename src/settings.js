@@ -3,11 +3,7 @@ import { getCharaFilename } from "../../../../utils.js";
 import { world_info } from "../../../../world-info.js";
 import { extension_name, extension_path } from '../index.js';
 import { resetMessageButtons } from './messages.js';
-
-// debugger;
-const log = (...msg) => console.log('[reMemory]', ...msg);
-const debug = (...msg) => console.debug('[reMemory]', ...msg);
-const error = (...msg) => console.error('[reMemory]', ...msg);
+import { debug } from "./logging.js";
 
 export let settings;
 
@@ -25,6 +21,7 @@ export const SceneEndMode = {
 const defaultSettings = {
 	// general settings
 	"is_enabled": true,
+	"tools_enabled": false,
 	"show_buttons": [Buttons.LOG, Buttons.STOP, Buttons.REMEMBER],
 	// prompt/text injection settings
 	"keywords_prompt": "In your next response I want you to provide only a comma-delimited list of keywords and phrases which summarize the text you were given. Arrange the list in order of importance. Do not write in full sentences. Only include the list.",
