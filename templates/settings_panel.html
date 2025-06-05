@@ -84,16 +84,22 @@
 			<hr>
 			<div class="rmr-extension_block flex-container flexFlowColumn">
 				<div title="The prompt appended to a section of message history when generating a summary." class="flex-container flex1 flexFlowColumn">
-					<label for="rmr_memory_prompt">
-						<span>Summary Prompt</span>
+					<label for="rmr_memory_prompt_template">
+						<small>Summary Prompt</small>
 					</label>
-					<textarea placeholder="" rows="3" class="margin0 text_pole textarea_compact" id="rmr_memory_prompt"></textarea>
+					<textarea placeholder="" rows="5" class="margin0 text_pole textarea_compact" id="rmr_memory_prompt_template"></textarea>
 				</div>
 				<div title="The prompt appended to a new memory message when generating triggering keywords." class="flex-container flex1 flexFlowColumn">
-					<label for="rmr_keywords_prompt">
-						<span>Keyword Prompt</span>
+					<label for="rmr_keywords_prompt_template">
+						<small>Keyword Prompt</small>
 					</label>
-					<textarea placeholder="" rows="3" class="margin0 text_pole textarea_compact" id="rmr_keywords_prompt"></textarea>
+					<textarea placeholder="" rows="5" class="margin0 text_pole textarea_compact" id="rmr_keywords_prompt_template"></textarea>
+				</div>
+				<div title="Whether to allow or remove any generated keywords which match the persona or card(s) names." class="flex-container flex1 flexFlowColumn">
+					<label class="checkbox_label" for="rmr_allow_names">
+						<input id="rmr_allow_names" class="checkbox" type="checkbox" />
+						Allow card/persona names as keywords
+					</label>
 				</div>
 			</div>
 			<hr>

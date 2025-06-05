@@ -24,8 +24,16 @@ const defaultSettings = {
 	"tools_enabled": false,
 	"show_buttons": [Buttons.LOG, Buttons.STOP, Buttons.REMEMBER],
 	// prompt/text injection settings
-	"keywords_prompt": "In your next response I want you to provide only a comma-delimited list of keywords and phrases which summarize the text you were given. Arrange the list in order of importance. Do not write in full sentences. Only include the list.",
-	"memory_prompt": "Briefly summarize the most important details and events that occured in that sequence of events. Write your summary in a single paragraph.",
+	"keywords_prompt_template": `Consider the following quote:
+
+"{{content}}"
+
+In your next response I want you to provide only a comma-delimited list of keywords and phrases which summarize the text you were given. Arrange the list in order of importance. Do not write in full sentences. Only include the list.`,
+	"memory_prompt_template": `Consider the following history:
+
+{{content}}
+
+Briefly summarize the most important details and events that occured in that sequence of events. Write your summary in a single paragraph.`,
 	"memory_prefix": "",
 	"memory_suffix": "",
 	"memory_max_tokens": 0, // max generated length for memories. 0 = default setting used
@@ -36,6 +44,7 @@ const defaultSettings = {
 	"memory_life": 3,	// sticky
 	"memory_span": 3,	// how far back in the chat to include in a memory
 	"trigger_pct": 50, // trigger % for normal keyword entries
+	"allow_names": false, // whether to strip card/persona names from keywords
 	// popup WI settings
 	"popup_memories": false, // create additional low-chance constant memories
 	"popup_pct": 10,	 // trigger % for constant entries
@@ -112,8 +121,8 @@ async function loadSettingsUI() {
 	// add settings UI
 	const settingsDiv = await $.get(`${extension_path}/templates/settings_panel.html`);
 	$('#extensions_settings').append(settingsDiv);
-	$('#rmr_keywords_prompt').attr('placeholder', defaultSettings.keywords_prompt);
-	$('#rmr_memory_prompt').attr('placeholder', defaultSettings.memory_prompt);
+	$('#rmr_keywords_prompt_template').attr('placeholder', defaultSettings.keywords_prompt_template);
+	$('#rmr_memory_prompt_template').attr('placeholder', defaultSettings.memory_prompt_template);
 	const mode_div = $(`#rmr_scene_end_mode`);
 	for (const end_mode in SceneEndMode) {
 		mode_div.append(
@@ -150,6 +159,7 @@ async function loadSettingsUI() {
 	// 	toastr.warning('Memory fading is not yet implemented.', 'ReMemory');
 	// 	e.target.checked = false;
 	// });
+	$("#rmr_allow_names").prop('checked', settings.rmr_allow_names).on('click', toggleCheckboxSetting);
 	$("#rmr_hide_scene").prop('checked', settings.hide_scene).on('click', toggleCheckboxSetting);
 	// $("#rmr_add_banner").prop('checked', settings.add_banner).on('click', toggleCheckboxSetting);
 	$("#rmr_add_chunk_summaries").prop('checked', settings.add_chunk_summaries).on('click', toggleCheckboxSetting);
@@ -229,6 +239,24 @@ async function loadBookSelector() {
 export function loadSettings() {
 	// load settings
 	settings = extension_settings[extension_name] || {};
+
+	// special handling for converting old prompt settings to new ones
+	if (settings.memory_prompt) {
+		settings.memory_prompt_template = `Consider the following history:
+
+{{content}}
+
+${settings.memory_prompt}`;
+		delete settings.memory_prompt;
+	}
+	if (settings.keywords_prompt) {
+		settings.keywords_prompt_template = `Consider the following quote:
+
+"{{content}}"
+
+${settings.keywords_prompt}`;
+		delete settings.keywords_prompt;
+	}
 
 	// load default values into settings
 	for (const key in defaultSettings) {

@@ -39,6 +39,23 @@ function bookForChar(characterId) {
 	return "";
 }
 
+export function getAllNames() {
+	const context = getContext();
+	const powerUserSettings = context.powerUserSettings;
+
+	let names = [context.name1];
+	if (context.characterId) {
+		names.push(context.name2);
+	}
+	if (context.groupId) {
+		const group = context.groups.find(x => x.id === context.groupId);
+		for (const member of group.members) {
+			names.push(getCharaFilename(null, {'manualAvatarKey':member}));
+		}
+	}
+	return names;
+}
+
 export function getActiveMemoryBooks() {
 	const context = getContext();
 	const powerUserSettings = context.powerUserSettings;
@@ -202,11 +219,8 @@ async function genSummaryWithSlash(history, id=0) {
 	if (id > 0) {
 		infoToast("Generating summary #"+id+"....");
 	}
-	const gen = `/genraw stop=[] instruct=on lock=on Consider the following history:
-
-	${history}
-	
-	${settings.memory_prompt}`
+	const prompt_text = settings.memory_prompt_template.replace('{{content}}', history.trim());
+	const gen = `/genraw stop=[] instruct=on lock=on ${prompt_text}`;
 	let swapped = false;
 	if (settings.profile || commandArgs.profile) {
 		swapped = await swapProfile();
@@ -241,11 +255,8 @@ async function generateKeywords(content) {
 	last_gen_timestamp = Date.now();
 
 	infoToast("Generating keywords....");
-	const gen = `/genraw stop=["\n"] lock=on Consider the following quote:
-	
-	"${content}"
-	
-	${settings.keywords_prompt}`;
+	const prompt_text = settings.keywords_prompt_template.replace('{{content}}', content.trim());
+	const gen = `/genraw stop=["\n"] lock=on ${prompt_text}`;
 	let swapped = false;
 	if (settings.profile) {
 		swapped = await swapProfile();
@@ -261,8 +272,12 @@ async function generateKeywords(content) {
 	const parsed_result = getContext().parseReasoningFromString(result.pipe);
 	if (parsed_result) result = parsed_result.content;
 	else result = result.pipe;
-	// TODO: strip out character names
-	return result.split(',').slice(0,5).map((it) => it.trim());
+	result = result.split(',').map((it) => it.trim());
+	if (!settings.allow_names) {
+		const names = getAllNames();
+		result = result.filter((it)=>!names.includes(it));
+	}
+	return result.slice(0,5);
 }
 
 async function generateSceneSummary(mes_id) {
@@ -392,7 +407,7 @@ export async function logMessage(message, options={}) {
 	for (const book of membooks) {
 		await createMemoryEntry(memory_text, book, keywords, options);
 	}
-	doneToastoast('Memory entry created');
+	doneToast('Memory entry created');
 }
 
 // closes off the scene and summarizes it
