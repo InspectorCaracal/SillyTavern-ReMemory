@@ -1,4 +1,5 @@
 import { extension_settings, getContext } from "../../../../extensions.js";
+import { extension_prompt_roles } from "../../../../../script.js";
 import { getCharaFilename } from "../../../../utils.js";
 import { world_info } from "../../../../world-info.js";
 import { extension_name, extension_path } from '../index.js';
@@ -42,6 +43,7 @@ Briefly summarize the most important details and events that occured in that seq
 	// WI settings
 	"memory_depth": 4, // depth
 	"memory_life": 3,	// sticky
+	"memory_role": 0,	// message role
 	"memory_span": 3,	// how far back in the chat to include in a memory
 	"trigger_pct": 50, // trigger % for normal keyword entries
 	"allow_names": false, // whether to strip card/persona names from keywords
@@ -130,7 +132,35 @@ async function loadSettingsUI() {
 				.attr('value', end_mode)
 				.text(SceneEndMode[end_mode])
 		);
+		if (SceneEndMode[end_mode] === settings.scene_end_mode) {
+			mode_div.val(end_mode);
+		}
 	}
+	mode_div.on('input', () => {
+		const mode = $('#rmr_scene_end_mode').val();
+		if (!Object.keys(SceneEndMode).includes(mode)) return;
+		settings.scene_end_mode = SceneEndMode[mode];
+		getContext().saveSettingsDebounced();
+	});
+
+	const role_div = $(`#rmr_memory_role`);
+	for (const role in extension_prompt_roles) {
+		role_div.append(
+			$('<option></option>')
+				.attr('value', extension_prompt_roles[role])
+				.text(role[0]+role.substring(1).toLowerCase())
+		);
+		if (extension_prompt_roles[role] == settings.memory_role) {
+			role_div.val(role);
+		}
+	}
+	role_div.on('input', () => {
+		const role = Number($('#rmr_memory_role').val());
+		if (!Object.values(extension_prompt_roles).includes(role)) return;
+		settings.memory_role = role;
+		getContext().saveSettingsDebounced();
+	});
+
 
 	// handle button checkboxes
 	for (const button in Buttons) {
@@ -185,17 +215,7 @@ async function loadSettingsUI() {
 			getContext().saveSettingsDebounced();
 		}
 	});
-	for (const mode in SceneEndMode) {
-		if (SceneEndMode[mode] === settings.scene_end_mode) {
-			$('#rmr_scene_end_mode').val(mode);
-		}
-	}
-	$('#rmr_scene_end_mode').on('input', () => {
-		const mode = $('#rmr_scene_end_mode').val();
-		if (!Object.keys(SceneEndMode).includes(mode)) return;
-		settings.scene_end_mode = SceneEndMode[mode];
-		getContext().saveSettingsDebounced();
-	});
+	
 	// load all numeric settings
 	$(`.rmr-extension_block input[type="number"]`).each((_i, elem) => {
 		const setting_key = elem.id.replace('rmr_', '');

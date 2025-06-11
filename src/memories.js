@@ -126,6 +126,7 @@ async function createMemoryEntry(content, book, keywords, options={}) {
 	new_entry.comment = options.title ?? `memory ${timestamp}`;
 	new_entry.key = keywords;
 	new_entry.position = 4;
+	new_entry.role = settings.memory_role;
 	new_entry.depth = settings.memory_depth;
 	new_entry.group = 'memory';
 	// allows keyword-triggered memories to take precedence to popup memories
@@ -136,20 +137,21 @@ async function createMemoryEntry(content, book, keywords, options={}) {
 	// optionally create pop-up constant entry
 	const do_popup = JSON.parse(options.popup ?? settings.popup_memories);
 	if (do_popup) {
-			const new_popup = createWorldInfoEntry(book, book_data);
-			new_popup.content = content;
-			new_popup.addMemo = true;
-			new_popup.comment = (options.title ?? `memory ${timestamp}`) + ` POPUP`;
-			new_popup.constant = true;
-			new_popup.position = 4;
-			new_popup.depth = settings.memory_depth;
-			new_popup.group = 'memory';
-			// allows keyword-triggered memories to take precedence to popup memories
-			new_popup.useGroupScoring = true;
-			new_popup.sticky = settings.memory_life;
-			new_popup.probability = settings.popup_pct;
-			new_popup.rmr_fade = true;
-		}
+		const new_popup = createWorldInfoEntry(book, book_data);
+		new_popup.content = content;
+		new_popup.addMemo = true;
+		new_popup.comment = (options.title ?? `memory ${timestamp}`) + ` POPUP`;
+		new_popup.constant = true;
+		new_popup.position = 4;
+		new_entry.role = settings.memory_role;
+		new_popup.depth = settings.memory_depth;
+		new_popup.group = 'memory';
+		// allows keyword-triggered memories to take precedence to popup memories
+		new_popup.useGroupScoring = true;
+		new_popup.sticky = settings.memory_life;
+		new_popup.probability = settings.popup_pct;
+		new_popup.rmr_fade = true;
+	}
 
 	await context.saveWorldInfo(book, book_data);
 	context.reloadWorldInfoEditor(book, false);
