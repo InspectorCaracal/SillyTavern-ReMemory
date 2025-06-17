@@ -35,6 +35,7 @@ jQuery(async () => {
 			if (!chatId) return;
 			resetMessageButtons();
 		});
+		eventSource.on(event_types.MORE_MESSAGES_LOADED, resetMessageButtons);
 		eventSource.on(event_types.CHARACTER_RENAMED, changeCharaName);		
 	}
 	else {
