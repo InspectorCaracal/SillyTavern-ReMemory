@@ -3,6 +3,7 @@ import { extension_settings, getContext } from "../../../../extensions.js";
 import { getRegexedString, regex_placement } from '../../../regex/engine.js';
 import { createWorldInfoEntry } from "../../../../world-info.js";
 import { user_avatar } from "../../../../personas.js";
+import { addEphemeralStoppingString, flushEphemeralStoppingStrings } from "../../../../power-user.js";
 import { getCharaFilename } from "../../../../utils.js";
 import { settings, SceneEndMode } from "./settings.js";
 import { toggleSceneHighlight } from "./messages.js";
@@ -15,7 +16,7 @@ let commandArgs;
 const infoToast = (text)=>{if (!commandArgs.quiet) toastr.info(text, "ReMemory")};
 const doneToast = (text)=>{if (!commandArgs.quiet) toastr.success(text, "ReMemory")};
 const oopsToast = (text)=>{if (!commandArgs.quiet) toastr.warning(text, "ReMemory")};
-const errorToast = (text)=>{if (!commandArgs.quiet) toastr.error(text, "ReMemory")};
+const errorToast = (text)=>{toastr.error(text, "ReMemory")};
 
 const delay_ms = ()=> {
 	return Math.max(500, 60000 / Number(settings.rate_limit));
@@ -210,7 +211,36 @@ async function swapProfile() {
 	return swapped;
 }
 
-async function genSummaryWithSlash(history, id=0) {
+async function runSwappableGen(prompt, stops=[]) {
+	const context = getContext();
+	let result = '';
+	let swapped = false;
+	try {
+		context.deactivateSendButtons();
+		if (settings.profile || commandArgs.profile) {
+			swapped = await swapProfile();
+			debug('swapped?', swapped);
+			if (swapped === null) return '';
+		}
+
+		stops.forEach(addEphemeralStoppingString);
+		result = await context.generateRaw({prompt: prompt});
+	} catch (err) {
+		debug("Error generating text", err);
+		errorToast(err.message);
+	} finally {
+		flushEphemeralStoppingStrings();
+		if (swapped) {
+			$('#connection_profiles').val(swapped);
+			document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
+			await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
+		}
+		context.activateSendButtons();
+	}
+	return result;
+}
+
+async function genSummary(history, id=0) {
 	let this_delay = delay_ms() - (Date.now() - last_gen_timestamp);
 	debug('delaying', this_delay, "out of", delay_ms());
 	if (this_delay > 0) {
@@ -222,21 +252,9 @@ async function genSummaryWithSlash(history, id=0) {
 		infoToast("Generating summary #"+id+"....");
 	}
 	const prompt_text = settings.memory_prompt_template.replace('{{content}}', history.trim());
-	const gen = `/genraw stop=[] instruct=on lock=on ${prompt_text}`;
-	let swapped = false;
-	if (settings.profile || commandArgs.profile) {
-		swapped = await swapProfile();
-		debug('swapped?', swapped);
-		if (swapped === null) return '';
-	}
-	const result = await runSlashCommand(gen);
-	if (swapped) {
-		$('#connection_profiles').val(swapped);
-		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
-		await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
-	}
-	const parsed_result = getContext().parseReasoningFromString(result.pipe);
-	if (!parsed_result) return result.pipe;
+	const result = await runSwappableGen(prompt_text);
+	const parsed_result = getContext().parseReasoningFromString(result);
+	if (!parsed_result) return result;
 	return parsed_result.content;
 }
 
@@ -246,7 +264,7 @@ async function generateMemory(message) {
 	const memory_history = await processMessageSlice(mes_id, settings.memory_span);
 	debug('memory history', memory_history);
 	const memory_context = memory_history.map((it) => `${it.name}: ${it.mes}`).join("\n\n");
-	return await genSummaryWithSlash(memory_context);
+	return await genSummary(memory_context);
 }
 
 async function generateKeywords(content) {
@@ -258,22 +276,9 @@ async function generateKeywords(content) {
 
 	infoToast("Generating keywords....");
 	const prompt_text = settings.keywords_prompt_template.replace('{{content}}', content.trim());
-	const gen = `/genraw stop=["\n"] lock=on ${prompt_text}`;
-	let swapped = false;
-	if (settings.profile) {
-		swapped = await swapProfile();
-		debug('swapped?', swapped);
-		if (swapped === null) return '';
-	}
-	let result = await runSlashCommand(gen);
-	if (swapped) {
-		$('#connection_profiles').val(swapped);
-		document.getElementById('connection_profiles').dispatchEvent(new Event('change'));
-		await new Promise((resolve) => getContext().eventSource.once(getContext().event_types.CONNECTION_PROFILE_LOADED, resolve));
-	}
-	const parsed_result = getContext().parseReasoningFromString(result.pipe);
+	let result = await runSwappableGen(prompt_text, ["\n"]);
+	const parsed_result = getContext().parseReasoningFromString(result);
 	if (parsed_result) result = parsed_result.content;
-	else result = result.pipe;
 	result = result.split(',').map((it) => it.trim());
 	if (!settings.allow_names) {
 		const names = getAllNames();
@@ -316,7 +321,7 @@ async function generateSceneSummary(mes_id) {
 		let chunk_sums = [];
 		let cid = 0;
 		while (cid < chunks.length) {
-			const chunk_sum = await genSummaryWithSlash(chunks[cid], Number(cid)+1);
+			const chunk_sum = await genSummary(chunks[cid], Number(cid)+1);
 			if (chunk_sum.length > 0) {
 				chunk_sums.push(chunk_sum);
 				cid++;
@@ -341,7 +346,7 @@ async function generateSceneSummary(mes_id) {
 	}
 	if (final_context.length > 0) {
 		infoToast("Generating scene summary....");
-		const result = await genSummaryWithSlash(final_context);
+		const result = await genSummary(final_context);
 		// at this point we have a history that we've successfully summarized
 		// if scene hiding is on, we want to hide all the messages we summarized, now
 		debug(settings.hide_scene, memory_history);
@@ -374,7 +379,7 @@ export async function rememberEvent(message, options={}) {
 	infoToast('Generating memory....');
 	const message_text = await generateMemory(message);
 	if (message_text.length <= 0) {
-		errorToast("No memory text generated to record.");
+		errorToast("No memory text to record.");
 		return;
 	}
 	let keywords;
