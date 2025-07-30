@@ -139,5 +139,3 @@ Optional named arguments:
 ## Support
 
 Feel free to open issues or PRs directly here, although no promises on timely resolution.
-
-There is also a thread in the official SillyTavern Discord you're welcome to comment in!
