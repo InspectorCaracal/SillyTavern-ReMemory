@@ -465,8 +465,9 @@ export async function endScene(message, options={}) {
 		else if (mode === SceneEndMode.MESSAGE) {
 			mes_id += 1
 			await runSlashCommand(`/comment at=${mes_id} ${summary} || /chat-jump ${mes_id}`);
+			
+			// Optionally disable the default "hidden" state for the scene ending summarization comment
 			if (!settings.hide_new_scene_end_summary) {
-				// Also optionally disable the default "hidden" state for the scene ending summarization comment
 				const message = chat[mes_id];
 				debug(message)
 				message.is_system = false;
