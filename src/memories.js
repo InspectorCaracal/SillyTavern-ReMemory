@@ -352,6 +352,16 @@ async function generateSceneSummary(mes_id) {
 		debug(settings.hide_scene, memory_history);
 		if (settings.hide_scene) {
 			for (const mes of memory_history) {
+				// Check if this is a comment message (a previous summary)
+				if ((mes.extra && mes.extra.type === "comment") || mes.name === "Note") {
+					debug("Found comment message type:", mes.extra?.type || "name-based detection");
+
+					// Skip hiding comment messages if hide_previous_scene_end_summaries is false
+					if (!settings.hide_previous_scene_end_summaries) {
+						continue;
+					}
+				}
+
 				chat[mes.index].is_system = true;
 				// Also toggle "hidden" state for all visible messages
 				const mes_elem = $(`.mes[mesid="${mes.index}"]`);
@@ -455,6 +465,15 @@ export async function endScene(message, options={}) {
 		else if (mode === SceneEndMode.MESSAGE) {
 			mes_id += 1
 			await runSlashCommand(`/comment at=${mes_id} ${summary} || /chat-jump ${mes_id}`);
+			if (!settings.hide_new_scene_end_summary) {
+				// Also optionally disable the default "hidden" state for the scene ending summarization comment
+				const message = chat[mes_id];
+				debug(message)
+				message.is_system = false;
+
+				const messageBlock = $(`.mes[mesid="${mes_id}"]`);
+				if (messageBlock.length) messageBlock.attr('is_system', String(false));
+			}
 		}
 	}
 	if (settings.fade_memories) {

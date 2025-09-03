@@ -57,6 +57,8 @@ Briefly summarize the most important details and events that occured in that seq
 	"add_chunk_summaries": false, // add a comment containing all of the individual chunk summaries
 	"scene_end_mode": SceneEndMode.MESSAGE, // whether final summary is added as a chat message or memory book entry
 	"book_assignments": {}, // which book to use for memory
+	"hide_new_scene_end_summary": true, // whether to hide new scene ending summarized comments
+	"hide_previous_scene_end_summaries": true, // whether to hide previous scene ending summarized comments
 }
 
 function toggleCheckboxSetting(event) {
@@ -193,6 +195,8 @@ async function loadSettingsUI() {
 	$("#rmr_hide_scene").prop('checked', settings.hide_scene).on('click', toggleCheckboxSetting);
 	// $("#rmr_add_banner").prop('checked', settings.add_banner).on('click', toggleCheckboxSetting);
 	$("#rmr_add_chunk_summaries").prop('checked', settings.add_chunk_summaries).on('click', toggleCheckboxSetting);
+	$("#rmr_hide_new_scene_end_summary").prop('checked', settings.hide_new_scene_end_summary).on('click', toggleCheckboxSetting);
+	$("#rmr_hide_previous_scene_end_summaries").prop('checked', settings.hide_previous_scene_end_summaries).on('click', toggleCheckboxSetting);
 	// handle dropdowns
 	reloadProfiles();
 	$('#rmr_profile').on('input', () => {
